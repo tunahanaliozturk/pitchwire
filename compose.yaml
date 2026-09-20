@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: pitchwire
+      POSTGRES_PASSWORD: pitchwire
+      POSTGRES_DB: pitchwire
+    ports:
+      - "5432:5432"
+    # postgres:18 refuses to start when the volume is mounted at /var/lib/postgresql/data, which is
+    # where every older tutorial puts it. Mount the parent directory instead.
+    volumes:
+      - pitchwire-db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pitchwire -d pitchwire"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+# The api and feed services join this file once they have something to do. Starting them now would
+# mean a stack that reports healthy while doing nothing, which is the kind of green that teaches you
+# to stop trusting green.
+
+volumes:
+  pitchwire-db:
