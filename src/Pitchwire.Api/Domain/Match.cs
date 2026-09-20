@@ -43,6 +43,12 @@ public sealed class Match
     public int LastEventSequence { get; set; }
 
     /// <summary>
+    /// When an event for this match last arrived. A live match that has gone quiet for too long is
+    /// how a dropped final whistle shows itself, and nothing else in the row would reveal it.
+    /// </summary>
+    public DateTimeOffset? LastEventAt { get; set; }
+
+    /// <summary>
     /// Set when the feed skipped a sequence number. The match is still served, and it says so, because
     /// showing a score that is known to be incomplete without saying so is the worse of the two.
     /// </summary>

@@ -21,7 +21,9 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<GapRepairBacklog>();
 builder.Services.AddScoped<EventIngestor>();
 builder.Services.AddScoped<GapRepairer>();
+builder.Services.AddScoped<StaleMatchSweeper>();
 builder.Services.AddHostedService<GapRepairService>();
+builder.Services.AddHostedService<StaleMatchSweepService>();
 
 builder.Services.AddHttpClient<IMatchFeed, HttpMatchFeed>((services, client) =>
     client.BaseAddress = services.GetRequiredService<IOptions<IngestOptions>>().Value.FeedBaseAddress);
@@ -30,6 +32,18 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<PitchwireDbContext>("postgres", tags: ["ready"]);
 
 var app = builder.Build();
+
+// Migrations and the catalogue are applied here only when the deployment asks for it. A service that
+// migrates its own database on every start is convenient in a demo and a hazard anywhere else, so the
+// switch is off unless compose or a developer turns it on.
+if (app.Configuration.GetValue("Seed:Enabled", false))
+{
+    using var scope = app.Services.CreateScope();
+    var database = scope.ServiceProvider.GetRequiredService<PitchwireDbContext>();
+
+    await database.Database.MigrateAsync();
+    await CatalogueSeeder.EnsureAsync(database, CancellationToken.None);
+}
 
 // Liveness answers whether the process is up. Readiness answers whether it can do its job, which
 // here means reaching PostgreSQL. A readiness probe that always says yes is worse than none: it

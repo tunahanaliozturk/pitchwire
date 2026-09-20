@@ -78,6 +78,9 @@ public sealed class PitchwireDbContext(DbContextOptions<PitchwireDbContext> opti
             // The live list reads by status and the fixture list pages on kickoff time. The second
             // index carries the identifier because that pair is the keyset the pagination token holds.
             match.HasIndex(x => x.Status);
+
+            // The sweeper looks for live matches that have gone quiet, which is this pair.
+            match.HasIndex(x => new { x.Status, x.LastEventAt });
             match.HasIndex(x => new { x.KickoffUtc, x.Id });
         });
 
