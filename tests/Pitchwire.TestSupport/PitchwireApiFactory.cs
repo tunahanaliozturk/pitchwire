@@ -12,7 +12,10 @@ namespace Pitchwire.TestSupport;
 /// <summary>
 /// The API host, wired to a throwaway PostgreSQL instance and a known ingestion secret.
 /// </summary>
-public sealed class PitchwireApiFactory(string connectionString, Action<IServiceCollection>? configureServices = null)
+public sealed class PitchwireApiFactory(
+    string connectionString,
+    Action<IServiceCollection>? configureServices = null,
+    string? redisConnectionString = null)
     : WebApplicationFactory<Program>
 {
     public const string IngestSecret = "integration-test-secret-long-enough";
@@ -22,6 +25,11 @@ public sealed class PitchwireApiFactory(string connectionString, Action<IService
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.UseSetting("ConnectionStrings:Postgres", connectionString);
+
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            builder.UseSetting("ConnectionStrings:Redis", redisConnectionString);
+        }
         builder.UseSetting("Ingest:Secret", IngestSecret);
 
         // A test has no patience for the half minute of silence that marks a match quiet in a real

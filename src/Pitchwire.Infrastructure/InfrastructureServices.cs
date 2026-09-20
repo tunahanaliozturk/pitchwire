@@ -16,9 +16,20 @@ public static class InfrastructureServices
     public static IServiceCollection AddPitchwireInfrastructure(
         this IServiceCollection services,
         string connectionString,
-        Uri feedBaseAddress)
+        Uri feedBaseAddress,
+        string? redisConnectionString = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            // The second level. Without it the cache is still correct, it just starts cold after every
+            // restart and cannot be shared, which is exactly what a test wants and a deployment does
+            // not.
+            services.AddStackExchangeRedisCache(options => options.Configuration = redisConnectionString);
+        }
+
+        services.AddHybridCache();
 
         services.AddDbContext<PitchwireDbContext>(options => options
             .UseNpgsql(connectionString)

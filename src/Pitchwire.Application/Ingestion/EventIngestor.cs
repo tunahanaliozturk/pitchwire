@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using Pitchwire.Application.Persistence;
+using Pitchwire.Application.Projections;
+using Pitchwire.Application.Reads;
 using Pitchwire.Application.Telemetry;
 using Pitchwire.Contracts;
 using Pitchwire.Domain;
@@ -19,6 +22,8 @@ public sealed class EventIngestor(
     IStoreFailures failures,
     TimeProvider clock,
     GapRepairBacklog repairs,
+    SeasonProjector projections,
+    HybridCache cache,
     IngestionMetrics metrics)
 {
     public async Task<IngestResponse> IngestAsync(
@@ -38,6 +43,7 @@ public sealed class EventIngestor(
         var duplicate = 0;
         var rejected = 0;
         var pendingRepairs = new List<GapRepairRequest>();
+        var touchedSeasons = new HashSet<Guid>();
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
@@ -68,10 +74,39 @@ public sealed class EventIngestor(
             {
                 pendingRepairs.Add(new GapRepairRequest(match.Id, gapFrom));
             }
+
+            if (outcome.ChangedTheTable)
+            {
+                touchedSeasons.Add(match.SeasonId);
+            }
+        }
+
+        // The match rows have to be written before the table is rebuilt from them. The last event of a
+        // match sets it to finished, and that change is still sitting in the change tracker here: a
+        // projection reading the database would see the match as still being played and leave the
+        // table a match short.
+        if (touchedSeasons.Count > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        // Inside the transaction, with the events and the match row. A table that is right only after
+        // a second write is a table that is wrong if the process dies between the two.
+        foreach (var seasonId in touchedSeasons)
+        {
+            await projections.ProjectAsync(seasonId, cancellationToken);
         }
 
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        // Dropped after the commit, never before. Invalidating first leaves a window where a reader
+        // repopulates the cache from the state the transaction is about to replace, and if the
+        // transaction then rolls back the cache is left holding a version that never existed.
+        foreach (var seasonId in touchedSeasons)
+        {
+            await cache.RemoveByTagAsync(CacheScope.SeasonTag(seasonId), cancellationToken);
+        }
 
         metrics.Accepted(accepted);
         metrics.Duplicate(duplicate);
@@ -98,6 +133,7 @@ public sealed class EventIngestor(
         var rejected = 0;
         int? gapFrom = null;
         var rebuildNeeded = false;
+        var changedTheTable = false;
 
         foreach (var payload in payloads.OrderBy(e => e.Sequence))
         {
@@ -132,6 +168,15 @@ public sealed class EventIngestor(
             accepted++;
             metrics.RecordDeliveryLag(stored.ReceivedAt - stored.OccurredAt);
 
+            // Goals and cards move a top scorer list even while a match is still being played, and a
+            // finished match moves the league table. Nothing else here changes a number anyone reads.
+            changedTheTable |= kind is Domain.MatchEventKind.Goal
+                or Domain.MatchEventKind.OwnGoal
+                or Domain.MatchEventKind.PenaltyGoal
+                or Domain.MatchEventKind.Yellow
+                or Domain.MatchEventKind.Red
+                or Domain.MatchEventKind.PeriodEnd;
+
             if (payload.Sequence <= match.LastEventSequence)
             {
                 // An event that turned up after the match moved past it. The score is rebuilt from the
@@ -165,7 +210,7 @@ public sealed class EventIngestor(
             match.IsDegraded = !await IsContiguousAsync(provider, match, cancellationToken);
         }
 
-        return new GroupOutcome(accepted, duplicate, rejected, gapFrom);
+        return new GroupOutcome(accepted, duplicate, rejected, gapFrom, changedTheTable);
     }
 
     private async Task RebuildAsync(string provider, Match match, CancellationToken cancellationToken)
@@ -213,5 +258,5 @@ public sealed class EventIngestor(
         ReceivedAt = clock.GetUtcNow(),
     };
 
-    private readonly record struct GroupOutcome(int Accepted, int Duplicate, int Rejected, int? GapFrom);
+    private readonly record struct GroupOutcome(int Accepted, int Duplicate, int Rejected, int? GapFrom, bool ChangedTheTable);
 }

@@ -6,6 +6,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      The caching abstraction, not a cache. Which store backs the second level is a decision for the
+      layer that knows what is deployed.
+    -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <!--
       The relational package, not a database provider. It carries transactions and FromSql, both of

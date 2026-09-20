@@ -106,6 +106,15 @@ jobs:
           echo "Matches still marked degraded: $degraded"
           test "${degraded:-1}" -eq 0
 
+      - name: Assert the read API serves the table over HTTP
+        run: |
+          season=$(docker compose exec -T postgres psql -U pitchwire -d pitchwire -tAc "select id from seasons limit 1" | tr -d '[:space:]')
+          table=$(curl -fsS "http://localhost:5080/seasons/$season/table")
+          echo "$table" | head -c 300
+          echo "$table" | grep -q '"position":1'
+          live=$(curl -fsS "http://localhost:5080/matches/live?\$top=5")
+          echo "$live" | grep -q '"value"'
+
       - name: Show the table so far
         if: always()
         run: docker compose exec -T postgres psql -U pitchwire -d pitchwire -c "select t.name, s.played, s.won, s.drawn, s.lost, s.points from standings s join teams t on t.id = s.team_id order by s.points desc, s.goals_for desc limit 6"

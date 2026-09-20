@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pitchwire.Application.Ingestion;
+using Pitchwire.Application.Projections;
+using Pitchwire.Application.Reads;
 using Pitchwire.Application.Telemetry;
 
 namespace Pitchwire.Application;
@@ -22,6 +24,9 @@ public static class ApplicationServices
         services.AddSingleton<GapRepairBacklog>();
 
         services.AddScoped<EventIngestor>();
+        services.AddScoped<SeasonProjector>();
+        services.AddScoped<MatchReads>();
+        services.AddScoped<SeasonReads>();
         services.AddScoped<GapRepairer>();
         services.AddScoped<StaleMatchSweeper>();
 
