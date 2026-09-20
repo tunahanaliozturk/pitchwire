@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Pitchwire.Api;
 using Pitchwire.Api.Ingestion;
+using Pitchwire.Api.Live;
 using Pitchwire.Api.Reads;
 using Pitchwire.Application;
 using Pitchwire.Application.Ingestion;
+using Pitchwire.Application.Live;
 using Pitchwire.Infrastructure;
 using Pitchwire.Infrastructure.Persistence;
 using Scalar.AspNetCore;
@@ -21,6 +23,8 @@ builder.Services.AddOptions<IngestOptions>()
 var ingestSettings = builder.Configuration.GetSection(IngestOptions.SectionName).Get<IngestOptions>()
     ?? new IngestOptions();
 
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<ILiveUpdates, SignalRLiveUpdates>();
 builder.Services.AddOpenApi();
 builder.AddPitchwireTelemetry();
 
@@ -69,6 +73,7 @@ app.MapReads();
 
 // The document is served in every environment on purpose. A public read API whose shape is only
 // documented on a developer machine is an API nobody outside can use.
+app.MapHub<MatchHub>("/hub/matches");
 app.MapOpenApi();
 app.MapScalarApiReference();
 

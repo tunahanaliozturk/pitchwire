@@ -18,6 +18,7 @@ internal static class ReadEndpoints
         // throws the result away. The symptom is a 200 with an empty body and nothing in the log.
         routes.MapGet("/matches/live", (Delegate)LiveAsync).WithName("LiveMatches");
         routes.MapGet("/matches/{matchId:guid}", (Delegate)DetailAsync).WithName("MatchDetail");
+        routes.MapGet("/matches/{matchId:guid}/events", (Delegate)TimelineAsync).WithName("MatchTimeline");
         routes.MapGet("/seasons/{seasonId:guid}/fixtures", (Delegate)FixturesAsync).WithName("Fixtures");
         routes.MapGet("/seasons/{seasonId:guid}/results", (Delegate)ResultsAsync).WithName("Results");
         routes.MapGet("/seasons/{seasonId:guid}/table", (Delegate)TableAsync).WithName("Table");
@@ -91,6 +92,13 @@ internal static class ReadEndpoints
 
         return detail is null ? Results.NotFound() : Results.Ok(detail);
     }
+
+    private static async Task<IResult> TimelineAsync(
+        MatchReads reads,
+        Guid matchId,
+        [FromQuery] int? from,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await reads.TimelineAsync(matchId, from is > 0 ? from.Value : 1, cancellationToken));
 
     private static async Task<IResult> TableAsync(
         SeasonReads reads,

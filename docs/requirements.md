@@ -145,10 +145,13 @@ goes quietly wrong. A test asserts that projecting the same season twice changes
 match for the detail view, by team for favourites, and by a single live group for the list view, so that a
 busy evening costs one group membership per client rather than one per match.
 
-**FR-14** Updates are deltas, not full match documents.
+**FR-14** Updates are deltas, not full match documents. The event inside a delta carries identifiers
+rather than player names: names would mean a lookup on the way out of every goal, and a client showing
+a scorer either holds the squad already or asks for the timeline.
 
 **FR-15** After a dropped connection, the client reconnects with the last sequence it saw and receives
-what it missed. A reconnect does not leave a hole in the timeline.
+what it missed, from `GET /matches/{id}/events?from={n}`. A reconnect does not leave a hole in the
+timeline, and it does not refetch a match from the first minute to find three events.
 
 **FR-16** When the browser tab goes to the background the connection closes, and it reopens with a
 catch-up when the tab returns. Holding a socket open in a background tab spends battery for updates nobody
