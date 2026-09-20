@@ -26,6 +26,12 @@ public sealed class IngestOptions
     public TimeSpan ReplayTolerance { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
+    /// Where the provider answers questions about what it already sent. A push feed cannot be asked
+    /// for what it forgot to push, so this address is what makes a gap recoverable.
+    /// </summary>
+    public Uri FeedBaseAddress { get; set; } = new("http://localhost:5081/");
+
+    /// <summary>
     /// The signature covers the whole body, so the body has to be buffered before it can be checked.
     /// This is the cap on what will be buffered.
     /// </summary>

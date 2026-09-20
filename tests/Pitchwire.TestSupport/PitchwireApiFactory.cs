@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pitchwire.Contracts;
 
@@ -11,7 +12,8 @@ namespace Pitchwire.TestSupport;
 /// <summary>
 /// The API host, wired to a throwaway PostgreSQL instance and a known ingestion secret.
 /// </summary>
-public sealed class PitchwireApiFactory(string connectionString) : WebApplicationFactory<Program>
+public sealed class PitchwireApiFactory(string connectionString, Action<IServiceCollection>? configureServices = null)
+    : WebApplicationFactory<Program>
 {
     public const string IngestSecret = "integration-test-secret-long-enough";
 
@@ -25,6 +27,10 @@ public sealed class PitchwireApiFactory(string connectionString) : WebApplicatio
         // Several hosts come up in one process across a suite. The Windows event log provider poisons
         // later log writes once the first host disposes it, so no host here keeps a provider.
         builder.ConfigureLogging(logging => logging.ClearProviders());
+
+        // Runs after the application's own registrations, so a test can replace a real dependency
+        // with a double it controls.
+        builder.ConfigureServices(services => configureServices?.Invoke(services));
     }
 }
 
