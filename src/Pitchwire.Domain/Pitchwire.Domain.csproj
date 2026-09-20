@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The rules of the game and the shapes they act on. No database, no HTTP, no framework: the day a
+    reducer needs one of those, the rule it encodes has stopped being a rule about football.
+  -->
+
+</Project>

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Pitchwire.Api.Domain;
-using Pitchwire.Api.Ingestion;
+using Pitchwire.Application.Ingestion;
+using Pitchwire.Domain;
 using Pitchwire.TestSupport;
 
 namespace Pitchwire.IntegrationTests;

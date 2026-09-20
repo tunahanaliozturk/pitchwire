@@ -7,7 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Pitchwire.Api/Pitchwire.Api.csproj" />
+    <!-- Referenced so the architecture test can read what each layer actually depends on. -->
+    <ProjectReference Include="../../src/Pitchwire.Application/Pitchwire.Application.csproj" />
+    <ProjectReference Include="../../src/Pitchwire.Domain/Pitchwire.Domain.csproj" />
+    <ProjectReference Include="../../src/Pitchwire.Infrastructure/Pitchwire.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Pitchwire.Feed/Pitchwire.Feed.csproj" />
   </ItemGroup>
 

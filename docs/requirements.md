@@ -63,7 +63,13 @@ not test tricks, they are what real providers do, and the system has to survive 
 and not only in a test.
 
 **`pitchwire.api`** owns the data. It accepts events at the ingestion boundary, derives match state from
-them, serves the read model, and distributes updates over SignalR and Web Push.
+them, serves the read model, and distributes updates over SignalR and Web Push. It is built as four
+projects with the dependency arrow pointing inward: `Domain` holds the entities and the rules that act
+on them and depends on nothing else, `Application` holds the use cases and the ports they need,
+`Infrastructure` holds the database, the provider client and the background workers, and `Api` is the
+host that wires them together and exposes the endpoints. A test reads what each assembly actually
+compiled against, so a using statement in the wrong direction fails the build rather than being caught
+in review.
 
 **`pitchwire.web`** is the Vue application, served as static files.
 
@@ -221,10 +227,22 @@ Every access path gets a named index, and the query plans for the three hottest 
 These are decisions already taken. They are recorded here because they shape the code rather than the
 behaviour, and because a reviewer should be able to argue with them.
 
-**No repository layer over EF Core.** `DbContext` is injected into handlers directly. `DbSet` is already a
-repository and `SaveChangesAsync` is already a unit of work. A generic wrapper on top hides `IQueryable`,
-blocks projection and `ExecuteUpdateAsync`, and produces interfaces with exactly one implementation. Shared
-query logic lives in `IQueryable<T>` extension methods, which compose and are easy to test.
+**No repository layer over EF Core.** `DbSet` is already a repository and `SaveChangesAsync` is already a
+unit of work. A generic wrapper on top hides `IQueryable`, blocks projection and `ExecuteUpdateAsync`, and
+buys nothing back. Shared query logic lives in `IQueryable<T>` extension methods, which compose and are
+easy to test.
+
+The layering does require one narrow port, `IPitchwireDbContext`, so that the application layer can reach
+the store without referencing a database provider. It exposes the same `DbSet` properties the context
+holds, so every capability above survives it. It has exactly one implementation, which is a cost of the
+layering rather than a benefit of it, and ADR 0007 says so plainly. A second small port,
+`IStoreFailures`, answers whether a failed write was a uniqueness violation, because every database
+answers that differently and EF Core does not answer it at all.
+
+**The wire model and the domain model are separate types.** The provider's event kinds and the domain's
+line up today and are still translated rather than shared. A provider that invents a kind is refused at
+the translation, instead of putting a value in the event log that no reducer can read and every later
+rebuild has to guess at.
 
 **Read queries project straight to DTOs** with `AsNoTracking`, so only the needed columns leave the
 database and nothing enters the change tracker. Hot paths use compiled queries. Counter updates on
@@ -329,10 +347,11 @@ Each one states the alternative that lost and what was given up.
 | 0004 | What HybridCache covers, and why invalidation happens after commit |
 | 0005 | Notification delivery through a transactional outbox, rather than a message broker |
 | 0006 | Keyset continuation tokens, and why `$skip` is refused |
-| 0007 | No repository layer over EF Core |
+| 0007 | Four layers with the dependency arrow inward, and an EF shaped context port rather than a repository |
 | 0008 | Single instance by design, and what a second instance would cost |
 | 0009 | Anonymous device identity, and why an identity provider was not used here |
 | 0010 | Where PrimeVue is used, and why the stock theme is not |
+| 0011 | A separate wire model, translated at the boundary, rather than one enum shared with the provider |
 
 ## 11. Acceptance criteria
 

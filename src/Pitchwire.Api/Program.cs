@@ -1,32 +1,29 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Pitchwire.Api.Ingestion;
-using Pitchwire.Api.Persistence;
+using Pitchwire.Application;
+using Pitchwire.Application.Ingestion;
+using Pitchwire.Infrastructure;
+using Pitchwire.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddDbContext<PitchwireDbContext>(options => options
-    .UseNpgsql(builder.Configuration.GetConnectionString("Postgres"))
-    // Snake case in the database, PascalCase in the model. The alternative is quoting identifiers in
-    // every hand written query, which is a tax paid by whoever is debugging rather than writing.
-    .UseSnakeCaseNamingConvention());
 
 builder.Services.AddOptions<IngestOptions>()
     .Bind(builder.Configuration.GetSection(IngestOptions.SectionName))
     .Validate(options => !string.IsNullOrWhiteSpace(options.Secret), "The ingestion secret is not configured.")
     .ValidateOnStart();
 
-builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<GapRepairBacklog>();
-builder.Services.AddScoped<EventIngestor>();
-builder.Services.AddScoped<GapRepairer>();
-builder.Services.AddScoped<StaleMatchSweeper>();
-builder.Services.AddHostedService<GapRepairService>();
-builder.Services.AddHostedService<StaleMatchSweepService>();
+// Read once, before the container is built, because the provider address decides how the typed HTTP
+// client is configured rather than being read on every call.
+var ingestSettings = builder.Configuration.GetSection(IngestOptions.SectionName).Get<IngestOptions>()
+    ?? new IngestOptions();
 
-builder.Services.AddHttpClient<IMatchFeed, HttpMatchFeed>((services, client) =>
-    client.BaseAddress = services.GetRequiredService<IOptions<IngestOptions>>().Value.FeedBaseAddress);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddPitchwireApplication();
+builder.Services.AddPitchwireInfrastructure(
+    builder.Configuration.GetConnectionString("Postgres")
+        ?? throw new InvalidOperationException("The Postgres connection string is not configured."),
+    ingestSettings.FeedBaseAddress);
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<PitchwireDbContext>("postgres", tags: ["ready"]);
@@ -45,9 +42,9 @@ if (app.Configuration.GetValue("Seed:Enabled", false))
     await CatalogueSeeder.EnsureAsync(database, CancellationToken.None);
 }
 
-// Liveness answers whether the process is up. Readiness answers whether it can do its job, which
-// here means reaching PostgreSQL. A readiness probe that always says yes is worse than none: it
-// silences the one signal meant to warn you.
+// Liveness answers whether the process is up. Readiness answers whether it can do its job, which here
+// means reaching PostgreSQL. A readiness probe that always says yes is worse than none: it silences
+// the one signal meant to warn you.
 app.MapGet("/health/live", () => Results.Ok(new { status = "live" }));
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
@@ -64,6 +61,6 @@ app.MapIngestion();
 
 app.Run();
 
-// The integration tests build this host through WebApplicationFactory, which needs the generated
-// entry point to be visible from another assembly.
+// The integration tests build this host through WebApplicationFactory, which needs the generated entry
+// point to be visible from another assembly.
 public partial class Program;
