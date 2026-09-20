@@ -59,6 +59,10 @@ X-Pitchwire-Timestamp: 0
 
 { "events": [] }
 
+### What a client asks for after its socket dropped, so the timeline has no hole in it. The live feed
+### itself is a SignalR hub at /hub/matches, which is not something a request file can speak.
+GET {{host}}/matches/REPLACE_WITH_A_MATCH_ID/events?from=1
+
 ### What the provider remembers sending for a match, from a given sequence onwards. This is the half a
 ### push feed cannot do on its own, and it is how a gap gets closed.
 GET {{feed}}/matches/REPLACE_WITH_A_MATCH_ID/events?from=1

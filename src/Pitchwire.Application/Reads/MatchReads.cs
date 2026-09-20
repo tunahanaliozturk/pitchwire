@@ -138,6 +138,31 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
         return new MatchDetail(match, timeline);
     }
 
+    /// <summary>
+    /// The events of a match from a given sequence onwards.
+    /// </summary>
+    /// <remarks>
+    /// What a client asks for after a dropped connection. A socket that reconnects has no idea what it
+    /// missed, and without this it would either show a gap in the timeline or refetch a whole match to
+    /// find the three events it did not see.
+    /// </remarks>
+    public async Task<IReadOnlyList<MatchEventView>> TimelineAsync(
+        Guid matchId,
+        int fromSequence,
+        CancellationToken cancellationToken) =>
+        await db.MatchEvents
+            .AsNoTracking()
+            .Where(e => e.MatchId == matchId && e.Sequence >= fromSequence)
+            .OrderBy(e => e.Sequence)
+            .Select(e => new MatchEventView(
+                e.Sequence,
+                e.Minute,
+                e.Kind.ToString(),
+                e.TeamId,
+                db.Players.Where(p => p.Id == e.PlayerId).Select(p => p.Name).FirstOrDefault(),
+                db.Players.Where(p => p.Id == e.AssistPlayerId).Select(p => p.Name).FirstOrDefault()))
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<FormEntry>> FormAsync(
         Guid teamId,
         Guid seasonId,

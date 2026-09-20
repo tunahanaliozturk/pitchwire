@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using Pitchwire.Application.Live;
 using Pitchwire.Application.Persistence;
 using Pitchwire.Application.Projections;
 using Pitchwire.Application.Reads;
@@ -24,6 +25,7 @@ public sealed class EventIngestor(
     GapRepairBacklog repairs,
     SeasonProjector projections,
     HybridCache cache,
+    ILiveUpdates live,
     IngestionMetrics metrics)
 {
     public async Task<IngestResponse> IngestAsync(
@@ -44,6 +46,7 @@ public sealed class EventIngestor(
         var rejected = 0;
         var pendingRepairs = new List<GapRepairRequest>();
         var touchedSeasons = new HashSet<Guid>();
+        var updates = new List<MatchUpdate>();
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
@@ -65,7 +68,7 @@ public sealed class EventIngestor(
                 continue;
             }
 
-            var outcome = await ApplyGroupAsync(provider, match, group, cancellationToken);
+            var outcome = await ApplyGroupAsync(provider, match, group, updates, cancellationToken);
             accepted += outcome.Accepted;
             duplicate += outcome.Duplicate;
             rejected += outcome.Rejected;
@@ -108,6 +111,10 @@ public sealed class EventIngestor(
             await cache.RemoveByTagAsync(CacheScope.SeasonTag(seasonId), cancellationToken);
         }
 
+        // Sent after the commit, for the same reason the cache is cleared after it. A goal put on a
+        // screen by a transaction that then rolls back cannot be taken back off.
+        await PublishAsync(updates, cancellationToken);
+
         metrics.Accepted(accepted);
         metrics.Duplicate(duplicate);
         metrics.Rejected(rejected);
@@ -126,6 +133,7 @@ public sealed class EventIngestor(
         string provider,
         Match match,
         IEnumerable<MatchEventPayload> payloads,
+        List<MatchUpdate> updates,
         CancellationToken cancellationToken)
     {
         var accepted = 0;
@@ -134,6 +142,7 @@ public sealed class EventIngestor(
         int? gapFrom = null;
         var rebuildNeeded = false;
         var changedTheTable = false;
+        var firstOfThisGroup = updates.Count;
 
         foreach (var payload in payloads.OrderBy(e => e.Sequence))
         {
@@ -195,11 +204,16 @@ public sealed class EventIngestor(
 
             MatchStateReducer.Apply(match, stored);
             match.LastEventAt = stored.ReceivedAt;
+            updates.Add(Delta(match, stored));
         }
 
         if (rebuildNeeded)
         {
             await RebuildAsync(provider, match, cancellationToken);
+
+            // A correction carries no event to append. The score moved because the log was replayed,
+            // and there is no single thing that happened for a timeline to show.
+            updates.Add(Delta(match, storedEvent: null));
         }
 
         // The mark is only worth trusting if it is checked whenever it could have changed. A match
@@ -210,7 +224,47 @@ public sealed class EventIngestor(
             match.IsDegraded = !await IsContiguousAsync(provider, match, cancellationToken);
         }
 
+        // The mark is decided once for the whole group, so every delta from it reports the same
+        // answer rather than half of them claiming a completeness that was still being worked out.
+        for (var index = firstOfThisGroup; index < updates.Count; index++)
+        {
+            updates[index] = updates[index] with { IsDegraded = match.IsDegraded };
+        }
+
         return new GroupOutcome(accepted, duplicate, rejected, gapFrom, changedTheTable);
+    }
+
+    private static MatchUpdate Delta(Match match, MatchEvent? storedEvent) => new(
+        match.Id,
+        match.HomeTeamId,
+        match.AwayTeamId,
+        match.LastEventSequence,
+        match.Minute,
+        match.Status.ToString(),
+        match.HomeScore,
+        match.AwayScore,
+        match.IsDegraded,
+        storedEvent is null
+            ? null
+            : new MatchUpdateEvent(
+                storedEvent.Sequence,
+                storedEvent.Minute,
+                storedEvent.Kind.ToString(),
+                storedEvent.TeamId,
+                storedEvent.PlayerId,
+                storedEvent.AssistPlayerId));
+
+    private async Task PublishAsync(List<MatchUpdate> updates, CancellationToken cancellationToken)
+    {
+        if (updates.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var update in updates)
+        {
+            await live.PublishAsync(update, cancellationToken);
+        }
     }
 
     private async Task RebuildAsync(string provider, Match match, CancellationToken cancellationToken)
