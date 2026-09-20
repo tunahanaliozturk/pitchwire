@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Pitchwire.Contracts/Pitchwire.Contracts.csproj" />
+    <ProjectReference Include="../../src/Pitchwire.Api/Pitchwire.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>
