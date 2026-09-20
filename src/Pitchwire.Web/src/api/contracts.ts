@@ -88,6 +88,22 @@ export const formEntry = z.object({
     outcome: z.string(),
 });
 
+export const deviceSettings = z.object({
+    id: z.string(),
+    timeZoneId: z.string(),
+    quietHoursStart: z.string().nullable(),
+    quietHoursEnd: z.string().nullable(),
+    notifyOnGoal: z.boolean(),
+    notifyOnRedCard: z.boolean(),
+    notifyOnKickoff: z.boolean(),
+    notifyOnFullTime: z.boolean(),
+    favourites: z.array(z.string()),
+});
+
+export const pushKey = z.object({ publicKey: z.string() });
+
+export type DeviceSettings = z.infer<typeof deviceSettings>;
+export type PushKey = z.infer<typeof pushKey>;
 export type SeasonSummary = z.infer<typeof seasonSummary>;
 export type TeamRef = z.infer<typeof teamRef>;
 export type MatchSummary = z.infer<typeof matchSummary>;
@@ -111,6 +127,8 @@ type Equal<A, B> =
 type Agrees<T extends true> = T;
 
 export type ContractChecks = [
+    Agrees<Equal<DeviceSettings, components["schemas"]["DeviceSettings"]>>,
+    Agrees<Equal<PushKey, components["schemas"]["PushKey"]>>,
     Agrees<Equal<SeasonSummary, components["schemas"]["SeasonSummary"]>>,
     Agrees<Equal<TeamRef, components["schemas"]["TeamRef"]>>,
     Agrees<Equal<MatchSummary, components["schemas"]["MatchSummary"]>>,

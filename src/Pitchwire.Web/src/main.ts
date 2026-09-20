@@ -2,9 +2,16 @@ import { VueQueryPlugin } from "@tanstack/vue-query";
 import { createPinia } from "pinia";
 import { createApp } from "vue";
 
+import { registerSW } from "virtual:pwa-register";
+
 import App from "./App.vue";
 import { router } from "./router";
 import "./styles/tokens.css";
+
+// Registered immediately and updated without asking. There is nothing to lose by taking the newest
+// build: this application holds no unsaved work, and a stale worker is what serves a goal from
+// yesterday's code.
+registerSW({ immediate: true });
 
 createApp(App)
     .use(createPinia())

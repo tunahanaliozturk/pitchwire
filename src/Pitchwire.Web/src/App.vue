@@ -40,6 +40,7 @@ const cycle = () => {
             <RouterLink to="/">Live</RouterLink>
             <RouterLink to="/fixtures">Fixtures</RouterLink>
             <RouterLink to="/table">Table</RouterLink>
+            <RouterLink to="/settings">Settings</RouterLink>
         </nav>
 
         <button type="button" class="theme" @click="cycle">
