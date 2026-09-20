@@ -1,5 +1,5 @@
-using Pitchwire.Api.Domain;
 using Pitchwire.Contracts;
+using Pitchwire.Domain;
 
 namespace Pitchwire.TestSupport;
 
@@ -9,13 +9,13 @@ namespace Pitchwire.TestSupport;
 public static class Payloads
 {
     public static MatchEventPayload Goal(Match match, int sequence, int minute, bool forHome) =>
-        Event(match, sequence, minute, MatchEventKind.Goal, forHome);
+        Event(match, sequence, minute, Contracts.MatchEventKind.Goal, forHome);
 
     public static MatchEventPayload Event(
         Match match,
         int sequence,
         int minute,
-        MatchEventKind kind,
+        Contracts.MatchEventKind kind,
         bool forHome,
         string? providerEventId = null)
     {

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Pitchwire.Api.Persistence;
+using Pitchwire.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 using Xunit;
 

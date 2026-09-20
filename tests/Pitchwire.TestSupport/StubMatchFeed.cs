@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Pitchwire.Api.Ingestion;
+using Pitchwire.Application.Ingestion;
 using Pitchwire.Contracts;
 
 namespace Pitchwire.TestSupport;

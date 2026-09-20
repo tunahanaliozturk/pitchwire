@@ -3,11 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Pitchwire.Api.Domain;
-using Pitchwire.Api.Ingestion;
-using Pitchwire.Api.Persistence;
+using Pitchwire.Application.Ingestion;
 using Pitchwire.Contracts;
+using Pitchwire.Domain;
 using Pitchwire.Feed;
+using Pitchwire.Infrastructure.Persistence;
 using Pitchwire.TestSupport;
 
 namespace Pitchwire.IntegrationTests;

@@ -1,6 +1,6 @@
-using Pitchwire.Api.Domain;
-using Pitchwire.Api.Persistence;
 using Pitchwire.Contracts;
+using Pitchwire.Domain;
+using Pitchwire.Infrastructure.Persistence;
 
 namespace Pitchwire.TestSupport;
 
@@ -47,7 +47,7 @@ public static class Seed
         int sequence,
         string providerEventId,
         string provider = "simulator",
-        MatchEventKind kind = MatchEventKind.Goal,
+        Domain.MatchEventKind kind = Domain.MatchEventKind.Goal,
         int minute = 10)
     {
         ArgumentNullException.ThrowIfNull(match);

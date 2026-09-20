@@ -1,7 +1,7 @@
 using System.Net;
 using Microsoft.EntityFrameworkCore;
-using Pitchwire.Api.Domain;
 using Pitchwire.Contracts;
+using Pitchwire.Domain;
 using Pitchwire.TestSupport;
 
 namespace Pitchwire.IntegrationTests;

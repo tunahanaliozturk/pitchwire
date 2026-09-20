@@ -1,6 +1,4 @@
-using Pitchwire.Api.Domain;
-using Pitchwire.Api.Ingestion;
-using Pitchwire.Contracts;
+using Pitchwire.Domain;
 
 namespace Pitchwire.UnitTests;
 

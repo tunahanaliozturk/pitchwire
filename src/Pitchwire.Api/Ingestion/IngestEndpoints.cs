@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Pitchwire.Application.Ingestion;
 using Pitchwire.Contracts;
 
 namespace Pitchwire.Api.Ingestion;

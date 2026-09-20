@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Pitchwire.Api/Pitchwire.Api.csproj" />
+    <ProjectReference Include="../../src/Pitchwire.Infrastructure/Pitchwire.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

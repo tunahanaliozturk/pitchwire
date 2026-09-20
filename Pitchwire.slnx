@@ -1,8 +1,15 @@
 <Solution>
-  <Folder Name="/src/">
+  <Folder Name="/src/api/">
     <Project Path="src/Pitchwire.Api/Pitchwire.Api.csproj" />
-    <Project Path="src/Pitchwire.Contracts/Pitchwire.Contracts.csproj" />
+    <Project Path="src/Pitchwire.Application/Pitchwire.Application.csproj" />
+    <Project Path="src/Pitchwire.Domain/Pitchwire.Domain.csproj" />
+    <Project Path="src/Pitchwire.Infrastructure/Pitchwire.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/feed/">
     <Project Path="src/Pitchwire.Feed/Pitchwire.Feed.csproj" />
+  </Folder>
+  <Folder Name="/src/shared/">
+    <Project Path="src/Pitchwire.Contracts/Pitchwire.Contracts.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pitchwire.IntegrationTests/Pitchwire.IntegrationTests.csproj" />

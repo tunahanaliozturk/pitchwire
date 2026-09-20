@@ -1,4 +1,4 @@
-using Pitchwire.Api.Ingestion;
+using Pitchwire.Application.Ingestion;
 using Pitchwire.Contracts;
 using Pitchwire.Feed;
 
