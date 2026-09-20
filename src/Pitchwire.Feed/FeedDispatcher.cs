@@ -34,10 +34,6 @@ public sealed partial class FeedDispatcher(
         var settings = options.Value;
         var script = MatchScript.For(fixture, settings.Seed);
 
-        // Recorded before anything is sent. The ledger is what the provider knows, and an event that
-        // never reaches the API still has to be here or the repair endpoint could not return it.
-        ledger.Record(fixture.Id, script);
-
         var rolls = new Rolls(settings.Seed ^ (ulong)fixture.Id.GetHashCode() ^ 0xD1B54A32D192ED03);
         var pending = new List<MatchEventPayload>();
         var held = new List<MatchEventPayload>();
@@ -51,6 +47,10 @@ public sealed partial class FeedDispatcher(
         {
             await WaitForMinuteAsync(@event.Minute - previousMinute, settings, cancellationToken);
             previousMinute = @event.Minute;
+
+            // Noted as it happens, before the decision to send it. The provider knows about a goal it
+            // then failed to deliver, and it must not know about one that has not been scored yet.
+            ledger.Note(fixture.Id, @event);
 
             if (rolls.Chance(settings.DropRate))
             {

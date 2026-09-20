@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Pitchwire.Api;
 using Pitchwire.Api.Ingestion;
 using Pitchwire.Application;
 using Pitchwire.Application.Ingestion;
@@ -17,6 +18,8 @@ builder.Services.AddOptions<IngestOptions>()
 // client is configured rather than being read on every call.
 var ingestSettings = builder.Configuration.GetSection(IngestOptions.SectionName).Get<IngestOptions>()
     ?? new IngestOptions();
+
+builder.AddPitchwireTelemetry();
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddPitchwireApplication();

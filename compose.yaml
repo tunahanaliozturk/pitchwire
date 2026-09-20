@@ -1,3 +1,8 @@
+# The ingestion secret is shared between the two services through the environment here. A real
+# deployment would hand each one its own copy from a secret store: compose is a demo, not a pattern to
+# copy.
+x-ingest-secret: &ingest-secret "local-development-ingestion-secret"
+
 services:
   postgres:
     image: postgres:18
@@ -27,9 +32,52 @@ services:
       timeout: 3s
       retries: 20
 
-# The api and feed services join this file once they have something to do. Starting them now would
-# mean a stack that reports healthy while doing nothing, which is the kind of green that teaches you
-# to stop trusting green.
+  api:
+    build:
+      context: .
+      dockerfile: src/Pitchwire.Api/Dockerfile
+    environment:
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=pitchwire;Username=pitchwire;Password=pitchwire"
+      Ingest__Secret: *ingest-secret
+      Ingest__FeedBaseAddress: "http://feed:8080/"
+      # Applies migrations and puts the league in place on start. Off by default everywhere else.
+      Seed__Enabled: "true"
+    ports:
+      - "5080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # The runtime image ships with neither curl nor wget, so a healthcheck written with either of
+      # them never passes. Bash and /dev/tcp are both already there.
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/localhost/8080' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  feed:
+    build:
+      context: .
+      dockerfile: src/Pitchwire.Feed/Dockerfile
+    environment:
+      Feed__Secret: *ingest-secret
+      Feed__ApiBaseAddress: "http://api:8080/"
+      # A match minute every half second, so a full match takes about three quarters of a minute and a
+      # round finishes while somebody is still looking at it.
+      Feed__ClockFactor: "120"
+      Feed__RoundIntervalSeconds: "15"
+    ports:
+      - "5081:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/localhost/8080' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
 volumes:
   pitchwire-db:

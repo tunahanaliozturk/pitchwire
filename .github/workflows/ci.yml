@@ -70,18 +70,45 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # The quick start in the documentation is a promise to whoever clones this. This job is what
-      # keeps it, so it asserts the services are actually serving rather than merely started.
+      # The quick start in the documentation is a promise to whoever clones this. This job keeps it,
+      # and it asserts that a match actually played rather than that four containers started.
       - name: Start the stack
-        run: docker compose up -d --wait
+        run: docker compose up -d --build --wait
 
-      - name: Assert PostgreSQL accepts connections
-        run: docker compose exec -T postgres pg_isready -U pitchwire -d pitchwire
-
-      - name: Assert Redis answers
+      - name: Wait for a match to finish
         run: |
-          reply=$(docker compose exec -T redis redis-cli ping)
-          test "$reply" = "PONG"
+          for attempt in $(seq 1 60); do
+            finished=$(docker compose exec -T postgres psql -U pitchwire -d pitchwire -tAc "select count(*) from matches where status = 'Finished'" | tr -d '\r')
+            if [ "${finished:-0}" -gt 0 ]; then
+              echo "A match finished after about $((attempt * 5)) seconds."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "No match finished. The stack came up, and nothing was ingested."
+          docker compose logs --tail 50 api feed
+          exit 1
+
+      - name: Assert the finished match holds a real event log
+        run: |
+          row=$(docker compose exec -T postgres psql -U pitchwire -d pitchwire -tAc "select count(*), min(minute), max(minute) from match_events where match_id = (select id from matches where status = 'Finished' limit 1)" | tr -d '\r')
+          events=$(echo "$row" | cut -d'|' -f1)
+          first=$(echo "$row" | cut -d'|' -f2)
+          last=$(echo "$row" | cut -d'|' -f3)
+          echo "The finished match holds $events events, running from minute $first to minute $last."
+          test "${events:-0}" -gt 5
+          test "${first:-99}" -eq 0
+          test "${last:-0}" -ge 90
+
+      - name: Assert no match is left showing an incomplete score
+        run: |
+          degraded=$(docker compose exec -T postgres psql -U pitchwire -d pitchwire -tAc "select count(*) from matches where is_degraded" | tr -d '\r')
+          echo "Matches still marked degraded: $degraded"
+          test "${degraded:-1}" -eq 0
+
+      - name: Show the table so far
+        if: always()
+        run: docker compose exec -T postgres psql -U pitchwire -d pitchwire -c "select t.name, s.played, s.won, s.drawn, s.lost, s.points from standings s join teams t on t.id = s.team_id order by s.points desc, s.goals_for desc limit 6"
 
       - name: Stop the stack
         if: always()
