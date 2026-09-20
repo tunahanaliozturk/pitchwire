@@ -204,6 +204,17 @@ jobs:
           # The hub handshake travels the same proxy. A negotiate that answers proves the upgrade is wired.
           curl -fsS -X POST "http://localhost:5082/api/hub/matches/negotiate?negotiateVersion=1" | grep -q WebSockets
 
+      - name: Assert the application can be installed and told about a goal
+        run: |
+          # A manifest served as application/octet-stream is a manifest browsers refuse, and the
+          # application quietly stops being installable with nothing saying why.
+          docker compose exec -T web wget -qS -O /dev/null http://127.0.0.1:8080/manifest.webmanifest 2>&1 | grep -qi "content-type: application/manifest+json"
+          worker=$(curl -fsS http://localhost:5082/sw.js)
+          echo "$worker" | grep -q "notificationclick"
+          echo "$worker" | grep -q "showNotification"
+          # The key a browser needs before it can subscribe at all.
+          curl -fsS http://localhost:5082/api/push/public-key | grep -q publicKey
+
       - name: Show the table so far
         if: always()
         run: docker compose exec -T postgres psql -U pitchwire -d pitchwire -c "select t.name, s.played, s.won, s.drawn, s.lost, s.points from standings s join teams t on t.id = s.team_id order by s.points desc, s.goals_for desc limit 6"

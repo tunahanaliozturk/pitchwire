@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="pitchwire">
+  <title>pitchwire</title>
+  <!--
+    A goal seen from the front, reduced to three strokes, with the line at its base running off the
+    tile. The frame is the football, the line leaving the frame is the feed. Two colours, four
+    elements, and it survives being one colour at sixteen pixels.
+  -->
+  <g fill="none" stroke-width="2.5" stroke-linecap="square">
+    <path d="M8 21V10h16v11" stroke="#0e1116" />
+    <path d="M1 21h30" stroke="#12b886" />
+  </g>
+</svg>

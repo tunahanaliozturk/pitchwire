@@ -1,12 +1,15 @@
 import type { z } from "zod";
 
 import {
-    seasonSummary,
+    deviceSettings,
     matchDetail,
     matchEventView,
     pageOfMatchSummary,
+    pushKey,
     scorerRow,
+    seasonSummary,
     tableRow,
+    type DeviceSettings,
     type MatchDetail,
     type MatchEventView,
     type PageOfMatchSummary,
@@ -32,6 +35,43 @@ export class ApiError extends Error {
         super(message);
         this.name = "ApiError";
     }
+}
+
+async function send<T>(
+    path: string,
+    method: string,
+    schema: z.ZodType<T> | null,
+    body?: unknown,
+): Promise<T> {
+    const response = await fetch(`${base}${path}`, {
+        method,
+        // The device cookie is the identity. Without this nothing below belongs to anybody.
+        credentials: "same-origin",
+        headers:
+            body === undefined
+                ? { accept: "application/json" }
+                : { accept: "application/json", "content-type": "application/json" },
+        body: body === undefined ? undefined : JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        throw new ApiError(`${path} answered ${response.status}.`, response.status);
+    }
+
+    if (schema === null) {
+        return undefined as T;
+    }
+
+    const parsed = schema.safeParse(await response.json());
+
+    if (!parsed.success) {
+        throw new ApiError(
+            `${path} sent a body this build cannot read: ${parsed.error.message}`,
+            200,
+        );
+    }
+
+    return parsed.data;
 }
 
 async function read<T>(path: string, schema: z.ZodType<T>): Promise<T> {
@@ -86,4 +126,48 @@ export const api = {
 
     scorers: (seasonId: string, top = 10): Promise<ScorerRow[]> =>
         read(`/seasons/${seasonId}/scorers?$top=${top}`, scorerRow.array()),
+
+    /** The identity this browser already has, or nothing if it has never been here. */
+    device: async (): Promise<DeviceSettings | null> => {
+        const response = await fetch(`${base}/devices/me`, {
+            credentials: "same-origin",
+            headers: { accept: "application/json" },
+        });
+
+        // Not an error. A first visit has no identity yet, and asking is how it finds out.
+        if (response.status === 401) {
+            return null;
+        }
+
+        if (!response.ok) {
+            throw new ApiError(`/devices/me answered ${response.status}.`, response.status);
+        }
+
+        return deviceSettings.parse(await response.json());
+    },
+
+    identify: (): Promise<DeviceSettings> => send("/devices", "POST", deviceSettings),
+
+    setFavourites: (teamIds: string[]): Promise<DeviceSettings> =>
+        send("/devices/me/favourites", "PUT", deviceSettings, { teamIds }),
+
+    setPreferences: (
+        preferences: Omit<DeviceSettings, "id" | "favourites">,
+    ): Promise<DeviceSettings> =>
+        send("/devices/me/preferences", "PUT", deviceSettings, preferences),
+
+    pushKey: (): Promise<string> => read("/push/public-key", pushKey).then((key) => key.publicKey),
+
+    subscribe: (subscription: PushSubscriptionJSON): Promise<void> =>
+        send("/devices/me/push-subscriptions", "POST", null, {
+            endpoint: subscription.endpoint,
+            keys: { p256dh: subscription.keys?.["p256dh"], auth: subscription.keys?.["auth"] },
+        }),
+
+    unsubscribe: (endpoint: string): Promise<void> =>
+        send(
+            `/devices/me/push-subscriptions?endpoint=${encodeURIComponent(endpoint)}`,
+            "DELETE",
+            null,
+        ),
 };

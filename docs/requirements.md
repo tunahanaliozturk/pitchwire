@@ -180,7 +180,10 @@ retried forever.
 `(device_id, match_event_id)`.
 
 **FR-23** Clicking a notification opens that match. If the app is already open it is focused rather than
-duplicated in a new tab.
+duplicated in a new tab. The destination is checked before it is used: only a path inside this
+application is accepted, and a protocol relative one such as `//elsewhere` is refused along with an
+absolute URL. A notification that can send somebody anywhere is a notification worth sending for the
+wrong reasons.
 
 ### Frontend
 
@@ -410,6 +413,9 @@ Written down here so they are choices rather than surprises.
   is lost, but there is a visible gap of a second or two.
 * The simulator is not a real league. Fixtures, form and scoring patterns are plausible rather than
   faithful, and nothing in the product should be read as a prediction.
+* The device cookie is marked secure, so the demo has to be reached over HTTPS or through localhost.
+  On a plain HTTP host that is not localhost the browser will not return it, and every device setting
+  looks empty. Weakening the cookie to make a demo simpler would be the wrong trade.
 * Web Push is unavailable on some browser and platform combinations. The application degrades to in-app
   notifications there and says so rather than failing silently.
 * Generated VAPID keys do not survive a restart. A demo started without configured keys can be
