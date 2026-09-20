@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pitchwire.Application.Ingestion;
+using Pitchwire.Application.Notifications;
 using Pitchwire.Application.Projections;
 using Pitchwire.Application.Reads;
 using Pitchwire.Application.Telemetry;
@@ -25,6 +26,9 @@ public static class ApplicationServices
 
         services.AddScoped<EventIngestor>();
         services.AddScoped<SeasonProjector>();
+        services.AddScoped<DeviceRegistry>();
+        services.AddScoped<NotificationFanout>();
+        services.AddScoped<NotificationRelay>();
         services.AddScoped<MatchReads>();
         services.AddScoped<SeasonReads>();
         services.AddScoped<GapRepairer>();

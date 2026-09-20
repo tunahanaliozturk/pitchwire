@@ -25,6 +25,14 @@ public sealed class PitchwireDbContext(DbContextOptions<PitchwireDbContext> opti
 
     public DbSet<PlayerSeasonStats> PlayerSeasonStats => Set<PlayerSeasonStats>();
 
+    public DbSet<Device> Devices => Set<Device>();
+
+    public DbSet<DeviceFavourite> DeviceFavourites => Set<DeviceFavourite>();
+
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+
+    public DbSet<NotificationOutboxEntry> NotificationOutbox => Set<NotificationOutboxEntry>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -112,6 +120,53 @@ public sealed class PitchwireDbContext(DbContextOptions<PitchwireDbContext> opti
             // The table is read in table order. Points and goals decide it, and the difference is
             // computed from the two columns already here.
             standing.HasIndex(x => new { x.SeasonId, x.Points, x.GoalsFor });
+        });
+
+        modelBuilder.Entity<Device>(device =>
+        {
+            device.Property(x => x.TokenHash).HasMaxLength(64);
+            device.Property(x => x.TimeZoneId).HasMaxLength(64);
+
+            // The lookup on every request that carries a device cookie, so it is the one index this
+            // table cannot do without.
+            device.HasIndex(x => x.TokenHash).IsUnique();
+        });
+
+        modelBuilder.Entity<DeviceFavourite>(favourite =>
+        {
+            favourite.HasKey(x => new { x.DeviceId, x.TeamId });
+            favourite.HasOne(x => x.Device).WithMany().HasForeignKey(x => x.DeviceId).OnDelete(DeleteBehavior.Cascade);
+            favourite.HasOne(x => x.Team).WithMany().HasForeignKey(x => x.TeamId);
+
+            // The fan out reads this the other way round: given a team, who follows it.
+            favourite.HasIndex(x => x.TeamId);
+        });
+
+        modelBuilder.Entity<PushSubscription>(subscription =>
+        {
+            subscription.Property(x => x.Endpoint).HasMaxLength(512);
+            subscription.Property(x => x.P256dh).HasMaxLength(256);
+            subscription.Property(x => x.Auth).HasMaxLength(256);
+            subscription.HasOne(x => x.Device).WithMany().HasForeignKey(x => x.DeviceId).OnDelete(DeleteBehavior.Cascade);
+
+            // A browser that subscribes twice sends the same endpoint, and two rows for it would mean
+            // two notifications for one goal.
+            subscription.HasIndex(x => x.Endpoint).IsUnique();
+        });
+
+        modelBuilder.Entity<NotificationOutboxEntry>(entry =>
+        {
+            entry.Property(x => x.Title).HasMaxLength(120);
+            entry.Property(x => x.Body).HasMaxLength(300);
+            entry.Property(x => x.AbandonedReason).HasMaxLength(200);
+            entry.HasOne(x => x.Device).WithMany().HasForeignKey(x => x.DeviceId).OnDelete(DeleteBehavior.Cascade);
+
+            // One notification per device per event. A redelivered goal that somehow reached the fan
+            // out twice buzzes a phone once.
+            entry.HasIndex(x => new { x.DeviceId, x.MatchEventId }).IsUnique();
+
+            // What the relay claims: unsent work that is due, oldest first.
+            entry.HasIndex(x => new { x.SentAt, x.NextAttemptAt });
         });
 
         modelBuilder.Entity<PlayerSeasonStats>(stats =>

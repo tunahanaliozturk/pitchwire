@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Pitchwire.Application.Live;
+using Pitchwire.Application.Notifications;
 using Pitchwire.Application.Persistence;
 using Pitchwire.Application.Projections;
 using Pitchwire.Application.Reads;
@@ -24,6 +25,7 @@ public sealed class EventIngestor(
     TimeProvider clock,
     GapRepairBacklog repairs,
     SeasonProjector projections,
+    NotificationFanout notifications,
     HybridCache cache,
     ILiveUpdates live,
     IngestionMetrics metrics)
@@ -205,6 +207,10 @@ public sealed class EventIngestor(
             MatchStateReducer.Apply(match, stored);
             match.LastEventAt = stored.ReceivedAt;
             updates.Add(Delta(match, stored));
+
+            // Queued inside this transaction, with the event that caused it. Deciding afterwards
+            // would lose every notification the process was holding when it stopped.
+            await notifications.QueueAsync(match, stored, cancellationToken);
         }
 
         if (rebuildNeeded)
