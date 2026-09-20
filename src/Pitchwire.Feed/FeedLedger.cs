@@ -4,24 +4,45 @@ using Pitchwire.Contracts;
 namespace Pitchwire.Feed;
 
 /// <summary>
-/// What the provider believes happened, including the events it failed to deliver.
+/// What the provider believes has happened so far, including the events it failed to deliver.
 /// </summary>
 /// <remarks>
-/// This is the provider's own record, which is why the repair endpoint can serve from it: an event
-/// that was dropped on the way out still exists here, and that is exactly what makes a gap
-/// recoverable at all.
+/// An event is noted the moment the match reaches it, not when the script is written. A provider
+/// cannot hand back a goal that has not been scored yet, and a ledger holding the whole match in
+/// advance would let a consumer asking for a missing event fast forward to the final whistle. That is
+/// exactly what it did before this was fixed, and the symptom was matches ending in half the time
+/// they should take.
+/// <para>
+/// A dropped event is still noted here. The ledger is the provider's own record, and a delivery that
+/// failed is what makes a gap recoverable at all.
+/// </para>
 /// </remarks>
 public sealed class FeedLedger
 {
-    private readonly ConcurrentDictionary<Guid, MatchEventPayload[]> _scripts = new();
+    private readonly ConcurrentDictionary<Guid, List<MatchEventPayload>> _known = new();
 
-    public void Record(Guid matchId, IReadOnlyList<MatchEventPayload> script) =>
-        _scripts[matchId] = [.. script];
+    public void Note(Guid matchId, MatchEventPayload @event)
+    {
+        var events = _known.GetOrAdd(matchId, _ => []);
 
-    public IReadOnlyList<MatchEventPayload> From(Guid matchId, int fromSequence) =>
-        _scripts.TryGetValue(matchId, out var script)
-            ? [.. script.Where(e => e.Sequence >= fromSequence)]
-            : [];
+        lock (events)
+        {
+            events.Add(@event);
+        }
+    }
+
+    public IReadOnlyList<MatchEventPayload> From(Guid matchId, int fromSequence)
+    {
+        if (!_known.TryGetValue(matchId, out var events))
+        {
+            return [];
+        }
+
+        lock (events)
+        {
+            return [.. events.Where(e => e.Sequence >= fromSequence).OrderBy(e => e.Sequence)];
+        }
+    }
 
     /// <summary>
     /// The score according to the provider.
