@@ -79,5 +79,22 @@ services:
       timeout: 3s
       retries: 30
 
+  web:
+    build:
+      context: .
+      dockerfile: src/Pitchwire.Web/Dockerfile
+    ports:
+      - "5082:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      # 127.0.0.1 rather than localhost. Inside the container localhost resolves to ::1 first, nginx
+      # listens on IPv4 only, and the check fails against a server that is running perfectly well.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ > /dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
 volumes:
   pitchwire-db:

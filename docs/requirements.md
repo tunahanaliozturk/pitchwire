@@ -272,12 +272,17 @@ The single instance design in ADR 0008 is what makes this acceptable today. A se
 invalidation to travel between instances, which is one more reason that decision is written down rather
 than assumed.
 
-**PrimeVue is used where it earns its place** and nowhere else. Data tables, selects, date pickers,
-dialogs, toasts, switches and virtual scrolling come from the library, because getting their keyboard and
-screen reader behaviour right by hand is expensive. The live match row, the event timeline, the team badge
-and the goal highlight are written by hand, because they are the identity of the product and a generic
-component would make it look like a template. The theme is a custom preset built on the project's own
-tokens, not a stock theme.
+**A component library is used where it earns its place, and it does not yet.** The screens built so far
+are a list of matches, a timeline, a league table and a form. Every one of them is better served by
+semantic HTML than by a component: a real `table` element is what a screen reader and a keyboard already
+understand. The library was in the bundle before anything used it and cost 24 KB gzipped, more than half
+the first load, so it came back out. When a screen genuinely needs a date picker, a combo box or a
+virtualised list, the library returns for that screen.
+
+That library will be PrimeVue 4.5.5, the last release under MIT. Version 5 moved to a licence with
+revenue, headcount and funding conditions, a required licence key, and a notice the software may display
+without one. A repository anybody is invited to clone cannot carry that, and the npm licence audit fails
+the build on it rather than leaving it to be noticed later.
 
 **Globalization data is required.** Quiet hours are stored against the device's own IANA zone, and
 `TimeZoneInfo` cannot resolve one when a build runs with invariant globalization. That setting is
@@ -285,9 +290,16 @@ therefore off here, against the usual default, and the runtime image carries ICU
 surfaced cache keys that formatted numbers through the current culture, which would have stopped a key
 matching itself under another locale.
 
-**The API contract has one source.** The backend produces an OpenAPI document, and the client's types and
-Zod schemas are generated from it. Responses are parsed at the boundary, never cast. A CI job proves that
-renaming a field on the server breaks the frontend type check.
+**The API contract has one source.** The backend produces an OpenAPI document, the client's types are
+generated from it, and hand written Zod schemas parse every response at the boundary. A set of type level
+assertions holds the two together, so a schema that drifts from the document fails the type check rather
+than at runtime. A CI job regenerates the document and the types and fails if the committed copies differ,
+which is what makes a renamed field on the server break the browser build.
+
+The generator needed one correction to be useful. The .NET document described every integer as an integer
+or a string, which is a faithful description of what the serialiser can be configured to accept and a poor
+description of what this service does. Every generated client would have had to narrow a union that can
+never happen, so a schema transformer narrows it at the source.
 
 ## 7. Non-functional requirements
 
@@ -334,9 +346,9 @@ A change merges only when all of these pass.
 Backend: a build with zero warnings and warnings treated as errors, unit tests, integration tests against
 real PostgreSQL and Redis containers, the licence audit, and `dotnet format` verification.
 
-Frontend: `vue-tsc --noEmit`, ESLint with the TypeScript, Vue and accessibility plugins all at error
-level, Vitest with coverage, axe against the main routes, a bundle size budget, and `npm audit` at high
-severity.
+Frontend: `vue-tsc --noEmit`, ESLint with the TypeScript, Vue and accessibility plugins with no warnings
+allowed, Vitest, a bundle budget measured from the build manifest rather than guessed at, and a licence
+audit over the whole npm tree using the same policy as the NuGet one.
 
 Cross cutting: a `docker compose up` job that runs the README quick start and asserts against the running
 stack, Playwright journeys against that stack, and the contract drift job described in section 6.
@@ -372,7 +384,7 @@ Each one states the alternative that lost and what was given up.
 | 0007 | Four layers with the dependency arrow inward, and an EF shaped context port rather than a repository |
 | 0008 | Single instance by design, and what a second instance would cost |
 | 0009 | Anonymous device identity, and why an identity provider was not used here |
-| 0010 | Where PrimeVue is used, and why the stock theme is not |
+| 0010 | Why no component library is in the bundle yet, and why it will be PrimeVue 4.5.5 rather than 5 |
 | 0011 | A separate wire model, translated at the boundary, rather than one enum shared with the provider |
 
 ## 11. Acceptance criteria

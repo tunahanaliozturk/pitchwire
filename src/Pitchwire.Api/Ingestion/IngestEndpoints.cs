@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 using Pitchwire.Application.Ingestion;
 using Pitchwire.Contracts;
@@ -16,7 +17,7 @@ internal static class IngestEndpoints
         routes.MapPost("/ingest/events", (Delegate)HandleAsync);
     }
 
-    private static async Task<IResult> HandleAsync(
+    private static async Task<Accepted<IngestResponse>> HandleAsync(
         IngestRequest request,
         EventIngestor ingestor,
         IOptions<IngestOptions> options,
@@ -26,6 +27,6 @@ internal static class IngestEndpoints
 
         // Accepted rather than Created: the events are stored, but what a reader sees is derived from
         // them and the notifications they cause are still on their way.
-        return Results.Accepted(value: response);
+        return TypedResults.Accepted((string?)null, response);
     }
 }
