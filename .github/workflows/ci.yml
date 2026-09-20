@@ -45,6 +45,9 @@ jobs:
       - name: Audit dependency licences
         run: dotnet run --project tools/Pitchwire.LicenseAudit --configuration Release --no-build -- .
 
+      - name: Unit tests
+        run: dotnet run --project tests/Pitchwire.UnitTests --configuration Release --no-build
+
   compose:
     name: compose stack
     runs-on: ubuntu-latest
