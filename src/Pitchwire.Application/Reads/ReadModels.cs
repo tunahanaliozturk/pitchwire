@@ -1,6 +1,15 @@
 namespace Pitchwire.Application.Reads;
 
 /// <summary>
+/// A season, and the league it belongs to.
+/// </summary>
+/// <remarks>
+/// A client has to start somewhere. Without this it would have to be told a season identifier out of
+/// band, which is the sort of configuration that is wrong on somebody's machine for a week.
+/// </remarks>
+public sealed record SeasonSummary(Guid Id, int Year, Guid LeagueId, string League, string LeagueSlug);
+
+/// <summary>
 /// A team as every other read model refers to it.
 /// </summary>
 /// <remarks>

@@ -20,6 +20,19 @@ public sealed class SeasonReads(IPitchwireDbContext db, HybridCache cache)
         LocalCacheExpiration = TimeSpan.FromSeconds(30),
     };
 
+    /// <summary>Every season this service holds, newest first.</summary>
+    public async Task<IReadOnlyList<SeasonSummary>> SeasonsAsync(CancellationToken cancellationToken) =>
+        await db.Seasons
+            .AsNoTracking()
+            .OrderByDescending(season => season.Year)
+            .Select(season => new SeasonSummary(
+                season.Id,
+                season.Year,
+                season.League!.Id,
+                season.League.Name,
+                season.League.Slug))
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<TableRow>> TableAsync(Guid seasonId, CancellationToken cancellationToken) =>
         await cache.GetOrCreateAsync(
             CacheScope.Table(seasonId),

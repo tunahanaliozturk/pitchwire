@@ -27,7 +27,7 @@ var ingestSettings = builder.Configuration.GetSection(IngestOptions.SectionName)
 
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<ILiveUpdates, SignalRLiveUpdates>();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(OpenApiSchemas.NarrowNumbersToNumbers);
 builder.AddPitchwireTelemetry();
 
 builder.Services.AddOptions<WebPushOptions>()

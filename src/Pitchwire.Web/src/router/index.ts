@@ -1,0 +1,53 @@
+import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
+
+/**
+ * Four screens, each one lazily loaded.
+ *
+ * A single bundle means somebody opening one live match downloads the league table, the fixture list
+ * and everything else. Route level splitting is the cheapest performance decision available and it
+ * costs one arrow function per route.
+ */
+const routes: RouteRecordRaw[] = [
+    {
+        path: "/",
+        name: "live",
+        component: () => import("@/views/LiveView.vue"),
+        meta: { title: "Live" },
+    },
+    {
+        path: "/fixtures",
+        name: "fixtures",
+        component: () => import("@/views/FixturesView.vue"),
+        meta: { title: "Fixtures" },
+    },
+    {
+        path: "/table",
+        name: "table",
+        component: () => import("@/views/TableView.vue"),
+        meta: { title: "Table" },
+    },
+    {
+        path: "/matches/:matchId",
+        name: "match",
+        component: () => import("@/views/MatchView.vue"),
+        props: true,
+        meta: { title: "Match" },
+    },
+    {
+        path: "/:pathMatch(.*)*",
+        name: "not-found",
+        component: () => import("@/views/NotFoundView.vue"),
+        meta: { title: "Not found" },
+    },
+];
+
+export const router = createRouter({
+    history: createWebHistory(),
+    routes,
+    scrollBehavior: () => ({ top: 0 }),
+});
+
+router.afterEach((to) => {
+    const title = typeof to.meta.title === "string" ? to.meta.title : "";
+    document.title = title ? `${title} · pitchwire` : "pitchwire";
+});

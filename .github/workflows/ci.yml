@@ -64,6 +64,85 @@ jobs:
       - name: Integration tests
         run: dotnet run --project tests/Pitchwire.IntegrationTests --configuration Release
 
+  web:
+    name: web build and tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/Pitchwire.Web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Pitchwire.Web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # Vite does not type check. Without this job nothing does, and the contract assertions that
+      # make a renamed server field break the build would never be evaluated.
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      # Formatting belongs to Prettier alone. The lint rules that overlap it are turned off, so this
+      # is the only thing that has an opinion about line breaks.
+      - name: Verify formatting
+        run: npm run format:check
+
+      - name: Unit and component tests
+        run: npm run test
+
+      - name: Build
+        run: npx vite build
+
+      # What a first visit costs, measured from the build manifest rather than guessed.
+      - name: Bundle budget
+        run: npm run budget
+
+      # The npm tree gets the same treatment as the NuGet one. PrimeVue 5 moved to a licence with
+      # revenue conditions and a licence key, and nothing in a normal install said so.
+      - name: Audit dependency licences
+        run: npm run licences
+
+  contract:
+    name: contract drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Pitchwire.Web/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: src/Pitchwire.Web
+
+      # Takes the document from the running service and regenerates the client types from it. If the
+      # committed copies differ, the server has changed shape and nobody told the browser.
+      - name: Regenerate the contract
+        run: npm run contract
+        working-directory: src/Pitchwire.Web
+
+      - name: Fail if the committed contract is out of date
+        run: |
+          if ! git diff --exit-code -- src/Pitchwire.Web/openapi.json src/Pitchwire.Web/src/api/schema.d.ts; then
+            echo "The API has changed shape. Run 'npm run contract' in src/Pitchwire.Web and commit the result."
+            exit 1
+          fi
+
   compose:
     name: compose stack
     runs-on: ubuntu-latest
@@ -114,6 +193,16 @@ jobs:
           echo "$table" | grep -q '"position":1'
           live=$(curl -fsS "http://localhost:5080/matches/live?\$top=5")
           echo "$live" | grep -q '"value"'
+
+      - name: Assert the web application is served and can reach the API through it
+        run: |
+          page=$(curl -fsS http://localhost:5082/)
+          echo "$page" | grep -q 'id="app"'
+          # A reload on a route the router owns has to arrive as the index rather than a 404.
+          test "$(curl -fsS -o /dev/null -w '%{http_code}' http://localhost:5082/table)" = "200"
+          curl -fsS "http://localhost:5082/api/matches/live?\$top=3" | grep -q '"value"'
+          # The hub handshake travels the same proxy. A negotiate that answers proves the upgrade is wired.
+          curl -fsS -X POST "http://localhost:5082/api/hub/matches/negotiate?negotiateVersion=1" | grep -q WebSockets
 
       - name: Show the table so far
         if: always()

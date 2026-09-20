@@ -1,0 +1,1161 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Pitchwire.Api | v1",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:5199/"
+    }
+  ],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "tags": [
+          "Pitchwire.Api"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/push/public-key": {
+      "get": {
+        "tags": [
+          "Pitchwire.Api"
+        ],
+        "operationId": "PushPublicKey",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushKey"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices": {
+      "post": {
+        "tags": [
+          "DeviceEndpoints"
+        ],
+        "operationId": "IssueDevice",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/me": {
+      "get": {
+        "tags": [
+          "DeviceEndpoints"
+        ],
+        "operationId": "CurrentDevice",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/me/preferences": {
+      "put": {
+        "tags": [
+          "DeviceEndpoints"
+        ],
+        "operationId": "UpdatePreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/me/favourites": {
+      "put": {
+        "tags": [
+          "DeviceEndpoints"
+        ],
+        "operationId": "UpdateFavourites",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavouritesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/me/push-subscriptions": {
+      "post": {
+        "tags": [
+          "DeviceEndpoints"
+        ],
+        "operationId": "Subscribe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "DeviceEndpoints"
+        ],
+        "operationId": "Unsubscribe",
+        "parameters": [
+          {
+            "name": "endpoint",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/ingest/events": {
+      "post": {
+        "tags": [
+          "IngestEndpoints"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seasons": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "Seasons",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SeasonSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/live": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "LiveMatches",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "$skiptoken",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOfMatchSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/{matchId}": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "MatchDetail",
+        "parameters": [
+          {
+            "name": "matchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/matches/{matchId}/events": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "MatchTimeline",
+        "parameters": [
+          {
+            "name": "matchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchEventView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seasons/{seasonId}/fixtures": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "Fixtures",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "round",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "$skiptoken",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOfMatchSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seasons/{seasonId}/results": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "Results",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "$skiptoken",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOfMatchSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seasons/{seasonId}/table": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "Table",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TableRow"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seasons/{seasonId}/scorers": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "Scorers",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScorerRow"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teams/{teamId}/form": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "Form",
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "seasonId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FormEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DeviceSettings": {
+        "required": [
+          "id",
+          "timeZoneId",
+          "quietHoursStart",
+          "quietHoursEnd",
+          "notifyOnGoal",
+          "notifyOnRedCard",
+          "notifyOnKickoff",
+          "notifyOnFullTime",
+          "favourites"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "timeZoneId": {
+            "type": "string"
+          },
+          "quietHoursStart": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "time"
+          },
+          "quietHoursEnd": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "time"
+          },
+          "notifyOnGoal": {
+            "type": "boolean"
+          },
+          "notifyOnRedCard": {
+            "type": "boolean"
+          },
+          "notifyOnKickoff": {
+            "type": "boolean"
+          },
+          "notifyOnFullTime": {
+            "type": "boolean"
+          },
+          "favourites": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "FavouritesRequest": {
+        "required": [
+          "teamIds"
+        ],
+        "type": "object",
+        "properties": {
+          "teamIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "FormEntry": {
+        "required": [
+          "matchId",
+          "kickoffUtc",
+          "opponent",
+          "atHome",
+          "goalsFor",
+          "goalsAgainst",
+          "outcome"
+        ],
+        "type": "object",
+        "properties": {
+          "matchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kickoffUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "opponent": {
+            "$ref": "#/components/schemas/TeamRef"
+          },
+          "atHome": {
+            "type": "boolean"
+          },
+          "goalsFor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "goalsAgainst": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outcome": {
+            "type": "string"
+          }
+        }
+      },
+      "IngestRequest": {
+        "required": [
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchEventPayload"
+            }
+          }
+        }
+      },
+      "IngestResponse": {
+        "required": [
+          "accepted",
+          "duplicate",
+          "rejected"
+        ],
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "duplicate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rejected": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MatchDetail": {
+        "required": [
+          "match",
+          "timeline"
+        ],
+        "type": "object",
+        "properties": {
+          "match": {
+            "$ref": "#/components/schemas/MatchSummary"
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchEventView"
+            }
+          }
+        }
+      },
+      "MatchEventKind": {
+        "type": "integer"
+      },
+      "MatchEventPayload": {
+        "required": [
+          "providerEventId",
+          "matchId",
+          "sequence",
+          "minute",
+          "kind",
+          "teamId",
+          "playerId",
+          "assistPlayerId",
+          "occurredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "providerEventId": {
+            "type": "string"
+          },
+          "matchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/MatchEventKind"
+          },
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "playerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "assistPlayerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MatchEventView": {
+        "required": [
+          "sequence",
+          "minute",
+          "kind",
+          "teamId",
+          "player",
+          "assist"
+        ],
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "player": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assist": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MatchSummary": {
+        "required": [
+          "id",
+          "round",
+          "kickoffUtc",
+          "status",
+          "minute",
+          "homeScore",
+          "awayScore",
+          "isDegraded",
+          "home",
+          "away"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kickoffUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "minute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "homeScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "awayScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isDegraded": {
+            "type": "boolean"
+          },
+          "home": {
+            "$ref": "#/components/schemas/TeamRef"
+          },
+          "away": {
+            "$ref": "#/components/schemas/TeamRef"
+          }
+        }
+      },
+      "PageOfMatchSummary": {
+        "required": [
+          "value",
+          "nextLink"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchSummary"
+            }
+          },
+          "nextLink": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PreferencesRequest": {
+        "required": [
+          "timeZoneId",
+          "quietHoursStart",
+          "quietHoursEnd",
+          "notifyOnGoal",
+          "notifyOnRedCard",
+          "notifyOnKickoff",
+          "notifyOnFullTime"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZoneId": {
+            "type": "string"
+          },
+          "quietHoursStart": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "time"
+          },
+          "quietHoursEnd": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "time"
+          },
+          "notifyOnGoal": {
+            "type": "boolean"
+          },
+          "notifyOnRedCard": {
+            "type": "boolean"
+          },
+          "notifyOnKickoff": {
+            "type": "boolean"
+          },
+          "notifyOnFullTime": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PushKey": {
+        "required": [
+          "publicKey"
+        ],
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string"
+          }
+        }
+      },
+      "ScorerRow": {
+        "required": [
+          "playerId",
+          "player",
+          "team",
+          "goals",
+          "assists"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "player": {
+            "type": "string"
+          },
+          "team": {
+            "$ref": "#/components/schemas/TeamRef"
+          },
+          "goals": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assists": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SeasonSummary": {
+        "required": [
+          "id",
+          "year",
+          "leagueId",
+          "league",
+          "leagueSlug"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "leagueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "league": {
+            "type": "string"
+          },
+          "leagueSlug": {
+            "type": "string"
+          }
+        }
+      },
+      "SubscriptionKeys": {
+        "required": [
+          "p256dh",
+          "auth"
+        ],
+        "type": "object",
+        "properties": {
+          "p256dh": {
+            "type": "string"
+          },
+          "auth": {
+            "type": "string"
+          }
+        }
+      },
+      "SubscriptionRequest": {
+        "required": [
+          "endpoint",
+          "keys"
+        ],
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "keys": {
+            "$ref": "#/components/schemas/SubscriptionKeys"
+          }
+        }
+      },
+      "TableRow": {
+        "required": [
+          "position",
+          "team",
+          "played",
+          "won",
+          "drawn",
+          "lost",
+          "goalsFor",
+          "goalsAgainst",
+          "goalDifference",
+          "points"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "team": {
+            "$ref": "#/components/schemas/TeamRef"
+          },
+          "played": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "won": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "drawn": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lost": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "goalsFor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "goalsAgainst": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "goalDifference": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "points": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TeamRef": {
+        "required": [
+          "id",
+          "name",
+          "shortName",
+          "slug"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Pitchwire.Api"
+    },
+    {
+      "name": "DeviceEndpoints"
+    },
+    {
+      "name": "IngestEndpoints"
+    },
+    {
+      "name": "ReadEndpoints"
+    }
+  ]
+}

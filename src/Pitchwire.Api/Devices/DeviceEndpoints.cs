@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Pitchwire.Application.Notifications;
 using Pitchwire.Domain;
@@ -27,6 +28,8 @@ public sealed record PreferencesRequest(
 
 public sealed record FavouritesRequest(IReadOnlyList<Guid> TeamIds);
 
+public sealed record PushKey(string PublicKey);
+
 public sealed record SubscriptionKeys(string P256dh, string Auth);
 
 public sealed record SubscriptionRequest(string Endpoint, SubscriptionKeys Keys);
@@ -44,7 +47,7 @@ public static class DeviceEndpoints
 
         // The public half of the signing key, which a browser needs before it can subscribe. It is
         // public by design: the private half is what proves a message came from this service.
-        routes.MapGet("/push/public-key", (VapidKeys keys) => Results.Ok(new { publicKey = keys.PublicKey }))
+        routes.MapGet("/push/public-key", (VapidKeys keys) => TypedResults.Ok(new PushKey(keys.PublicKey)))
             .WithName("PushPublicKey");
 
         routes.MapPost("/devices", (Delegate)IssueAsync).WithName("IssueDevice");
@@ -55,7 +58,7 @@ public static class DeviceEndpoints
         routes.MapDelete("/devices/me/push-subscriptions", (Delegate)UnsubscribeAsync).WithName("Unsubscribe");
     }
 
-    private static async Task<IResult> IssueAsync(
+    private static async Task<Created<DeviceSettings>> IssueAsync(
         HttpContext context,
         DeviceRegistry registry,
         CancellationToken cancellationToken)
@@ -73,10 +76,10 @@ public static class DeviceEndpoints
             Path = "/",
         });
 
-        return Results.Created($"/devices/{device.Id}", await SettingsAsync(registry, device, cancellationToken));
+        return TypedResults.Created($"/devices/{device.Id}", await SettingsAsync(registry, device, cancellationToken));
     }
 
-    private static async Task<IResult> MeAsync(
+    private static async Task<Results<Ok<DeviceSettings>, UnauthorizedHttpResult>> MeAsync(
         HttpContext context,
         DeviceRegistry registry,
         CancellationToken cancellationToken)
@@ -84,11 +87,11 @@ public static class DeviceEndpoints
         var device = await CurrentAsync(context, registry, cancellationToken);
 
         return device is null
-            ? Results.Unauthorized()
-            : Results.Ok(await SettingsAsync(registry, device, cancellationToken));
+            ? TypedResults.Unauthorized()
+            : TypedResults.Ok(await SettingsAsync(registry, device, cancellationToken));
     }
 
-    private static async Task<IResult> PreferencesAsync(
+    private static async Task<Results<Ok<DeviceSettings>, UnauthorizedHttpResult, ProblemHttpResult>> PreferencesAsync(
         HttpContext context,
         DeviceRegistry registry,
         PreferencesRequest request,
@@ -98,7 +101,7 @@ public static class DeviceEndpoints
 
         if (device is null)
         {
-            return Results.Unauthorized();
+            return TypedResults.Unauthorized();
         }
 
         // Checked here rather than when a goal is scored. A zone this machine cannot resolve would
@@ -106,7 +109,7 @@ public static class DeviceEndpoints
         // person who set them could never explain.
         if (!TimeZoneInfo.TryFindSystemTimeZoneById(request.TimeZoneId, out _))
         {
-            return Results.Problem(
+            return TypedResults.Problem(
                 title: "That time zone is not one this service knows.",
                 detail: "Send an IANA identifier, such as Europe/Istanbul.",
                 statusCode: StatusCodes.Status400BadRequest);
@@ -114,7 +117,7 @@ public static class DeviceEndpoints
 
         if ((request.QuietHoursStart is null) != (request.QuietHoursEnd is null))
         {
-            return Results.Problem(
+            return TypedResults.Problem(
                 title: "Quiet hours need both ends or neither.",
                 detail: "Send a start and an end, or leave both empty to be told at any hour.",
                 statusCode: StatusCodes.Status400BadRequest);
@@ -130,10 +133,10 @@ public static class DeviceEndpoints
 
         await registry.SaveAsync(cancellationToken);
 
-        return Results.Ok(await SettingsAsync(registry, device, cancellationToken));
+        return TypedResults.Ok(await SettingsAsync(registry, device, cancellationToken));
     }
 
-    private static async Task<IResult> FavouritesAsync(
+    private static async Task<Results<Ok<DeviceSettings>, UnauthorizedHttpResult>> FavouritesAsync(
         HttpContext context,
         DeviceRegistry registry,
         FavouritesRequest request,
@@ -143,15 +146,15 @@ public static class DeviceEndpoints
 
         if (device is null)
         {
-            return Results.Unauthorized();
+            return TypedResults.Unauthorized();
         }
 
         await registry.SetFavouritesAsync(device.Id, request.TeamIds, cancellationToken);
 
-        return Results.Ok(await SettingsAsync(registry, device, cancellationToken));
+        return TypedResults.Ok(await SettingsAsync(registry, device, cancellationToken));
     }
 
-    private static async Task<IResult> SubscribeAsync(
+    private static async Task<Results<NoContent, UnauthorizedHttpResult>> SubscribeAsync(
         HttpContext context,
         DeviceRegistry registry,
         SubscriptionRequest request,
@@ -161,17 +164,17 @@ public static class DeviceEndpoints
 
         if (device is null)
         {
-            return Results.Unauthorized();
+            return TypedResults.Unauthorized();
         }
 
         await registry.SubscribeAsync(device.Id, request.Endpoint, request.Keys.P256dh, request.Keys.Auth, cancellationToken);
 
-        return Results.NoContent();
+        return TypedResults.NoContent();
     }
 
     // The endpoint arrives in the query string rather than a body. A DELETE with a body is refused
     // outright by minimal APIs, and it is a shape proxies and caches disagree about anyway.
-    private static async Task<IResult> UnsubscribeAsync(
+    private static async Task<Results<NoContent, UnauthorizedHttpResult>> UnsubscribeAsync(
         HttpContext context,
         DeviceRegistry registry,
         [FromQuery] string endpoint,
@@ -181,12 +184,12 @@ public static class DeviceEndpoints
 
         if (device is null)
         {
-            return Results.Unauthorized();
+            return TypedResults.Unauthorized();
         }
 
         await registry.UnsubscribeAsync(device.Id, endpoint, cancellationToken);
 
-        return Results.NoContent();
+        return TypedResults.NoContent();
     }
 
     private static Task<Device?> CurrentAsync(

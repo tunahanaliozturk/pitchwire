@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Pitchwire.Application.Paging;
@@ -16,6 +17,7 @@ internal static class ReadEndpoints
 
         // Cast, because a Task<IResult> method group binds as a RequestDelegate, runs the handler and
         // throws the result away. The symptom is a 200 with an empty body and nothing in the log.
+        routes.MapGet("/seasons", (Delegate)SeasonsAsync).WithName("Seasons");
         routes.MapGet("/matches/live", (Delegate)LiveAsync).WithName("LiveMatches");
         routes.MapGet("/matches/{matchId:guid}", (Delegate)DetailAsync).WithName("MatchDetail");
         routes.MapGet("/matches/{matchId:guid}/events", (Delegate)TimelineAsync).WithName("MatchTimeline");
@@ -26,7 +28,7 @@ internal static class ReadEndpoints
         routes.MapGet("/teams/{teamId:guid}/form", (Delegate)FormAsync).WithName("Form");
     }
 
-    private static async Task<IResult> LiveAsync(
+    private static async Task<Results<Ok<Page<MatchSummary>>, ProblemHttpResult>> LiveAsync(
         HttpContext context,
         MatchReads reads,
         [FromQuery(Name = TopParameter)] int? top,
@@ -41,10 +43,10 @@ internal static class ReadEndpoints
         var size = PageSize.Clamp(top);
         var page = await reads.LiveAsync(size, cursor, cancellationToken);
 
-        return Results.Ok(ToPage(context, page, MatchReads.LiveToken));
+        return TypedResults.Ok(ToPage(context, page, MatchReads.LiveToken));
     }
 
-    private static async Task<IResult> FixturesAsync(
+    private static async Task<Results<Ok<Page<MatchSummary>>, ProblemHttpResult>> FixturesAsync(
         HttpContext context,
         MatchReads reads,
         Guid seasonId,
@@ -61,10 +63,10 @@ internal static class ReadEndpoints
         var size = PageSize.Clamp(top);
         var page = await reads.FixturesAsync(seasonId, round, size, cursor, cancellationToken);
 
-        return Results.Ok(ToPage(context, page, MatchReads.FixturesToken));
+        return TypedResults.Ok(ToPage(context, page, MatchReads.FixturesToken));
     }
 
-    private static async Task<IResult> ResultsAsync(
+    private static async Task<Results<Ok<Page<MatchSummary>>, ProblemHttpResult>> ResultsAsync(
         HttpContext context,
         MatchReads reads,
         Guid seasonId,
@@ -80,40 +82,45 @@ internal static class ReadEndpoints
         var size = PageSize.Clamp(top);
         var page = await reads.ResultsAsync(seasonId, size, cursor, cancellationToken);
 
-        return Results.Ok(ToPage(context, page, MatchReads.ResultsToken));
+        return TypedResults.Ok(ToPage(context, page, MatchReads.ResultsToken));
     }
 
-    private static async Task<IResult> DetailAsync(
+    private static async Task<Results<Ok<MatchDetail>, NotFound>> DetailAsync(
         MatchReads reads,
         Guid matchId,
         CancellationToken cancellationToken)
     {
         var detail = await reads.DetailAsync(matchId, cancellationToken);
 
-        return detail is null ? Results.NotFound() : Results.Ok(detail);
+        return detail is null ? TypedResults.NotFound() : TypedResults.Ok(detail);
     }
 
-    private static async Task<IResult> TimelineAsync(
+    private static async Task<Ok<IReadOnlyList<MatchEventView>>> TimelineAsync(
         MatchReads reads,
         Guid matchId,
         [FromQuery] int? from,
         CancellationToken cancellationToken) =>
-        Results.Ok(await reads.TimelineAsync(matchId, from is > 0 ? from.Value : 1, cancellationToken));
+        TypedResults.Ok(await reads.TimelineAsync(matchId, from is > 0 ? from.Value : 1, cancellationToken));
 
-    private static async Task<IResult> TableAsync(
+    private static async Task<Ok<IReadOnlyList<SeasonSummary>>> SeasonsAsync(
+        SeasonReads reads,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await reads.SeasonsAsync(cancellationToken));
+
+    private static async Task<Ok<IReadOnlyList<TableRow>>> TableAsync(
         SeasonReads reads,
         Guid seasonId,
         CancellationToken cancellationToken) =>
-        Results.Ok(await reads.TableAsync(seasonId, cancellationToken));
+        TypedResults.Ok(await reads.TableAsync(seasonId, cancellationToken));
 
-    private static async Task<IResult> ScorersAsync(
+    private static async Task<Ok<IReadOnlyList<ScorerRow>>> ScorersAsync(
         SeasonReads reads,
         Guid seasonId,
         [FromQuery(Name = TopParameter)] int? top,
         CancellationToken cancellationToken) =>
-        Results.Ok(await reads.ScorersAsync(seasonId, PageSize.Clamp(top), cancellationToken));
+        TypedResults.Ok(await reads.ScorersAsync(seasonId, PageSize.Clamp(top), cancellationToken));
 
-    private static async Task<IResult> FormAsync(
+    private static async Task<Ok<IReadOnlyList<FormEntry>>> FormAsync(
         MatchReads reads,
         Guid teamId,
         [FromQuery] Guid seasonId,
@@ -123,7 +130,7 @@ internal static class ReadEndpoints
         // Five is what a form guide means. Anything longer stops being form and becomes the season.
         var wanted = count is > 0 and <= 10 ? count.Value : 5;
 
-        return Results.Ok(await reads.FormAsync(teamId, seasonId, wanted, cancellationToken));
+        return TypedResults.Ok(await reads.FormAsync(teamId, seasonId, wanted, cancellationToken));
     }
 
     private static bool TryReadCursor(string? skipToken, string kind, out MatchCursor? cursor)
@@ -144,11 +151,11 @@ internal static class ReadEndpoints
         return true;
     }
 
-    private static IResult MalformedToken() =>
+    private static ProblemHttpResult MalformedToken() =>
         // Refused rather than treated as the first page. A client paging through a list would
         // otherwise start again at the top and repeat everything it had already read, with nothing
         // anywhere saying that it had.
-        Results.Problem(
+        TypedResults.Problem(
             title: "The continuation token could not be read.",
             detail: $"Send back the {SkipTokenParameter} from a nextLink exactly as it was given.",
             statusCode: StatusCodes.Status400BadRequest);
