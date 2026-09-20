@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Pitchwire.Api.Ingestion;
 using Pitchwire.Api.Persistence;
 
@@ -17,7 +18,13 @@ builder.Services.AddOptions<IngestOptions>()
     .ValidateOnStart();
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<GapRepairBacklog>();
 builder.Services.AddScoped<EventIngestor>();
+builder.Services.AddScoped<GapRepairer>();
+builder.Services.AddHostedService<GapRepairService>();
+
+builder.Services.AddHttpClient<IMatchFeed, HttpMatchFeed>((services, client) =>
+    client.BaseAddress = services.GetRequiredService<IOptions<IngestOptions>>().Value.FeedBaseAddress);
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<PitchwireDbContext>("postgres", tags: ["ready"]);
