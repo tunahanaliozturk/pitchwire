@@ -5,6 +5,8 @@
     <Project Path="src/Pitchwire.Feed/Pitchwire.Feed.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Pitchwire.IntegrationTests/Pitchwire.IntegrationTests.csproj" />
+    <Project Path="tests/Pitchwire.TestSupport/Pitchwire.TestSupport.csproj" />
     <Project Path="tests/Pitchwire.UnitTests/Pitchwire.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tools/">

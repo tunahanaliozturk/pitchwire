@@ -48,6 +48,22 @@ jobs:
       - name: Unit tests
         run: dotnet run --project tests/Pitchwire.UnitTests --configuration Release --no-build
 
+  integration:
+    name: integration suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # Testcontainers starts a real PostgreSQL against the Docker daemon on the runner. The guarantee
+      # under test is a unique index refusing a second insert, and a provider that does not enforce
+      # indexes would only prove that the provider was configured.
+      - name: Integration tests
+        run: dotnet run --project tests/Pitchwire.IntegrationTests --configuration Release
+
   compose:
     name: compose stack
     runs-on: ubuntu-latest
