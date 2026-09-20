@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The wire contract between the provider and the ingestion boundary. It has no dependencies on
+    purpose: both processes serialise these types, and anything pulled in here would be pulled into
+    both.
+  -->
+
+</Project>

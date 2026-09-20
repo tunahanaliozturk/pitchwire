@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Pitchwire.Api/Pitchwire.Api.csproj" />
+    <Project Path="src/Pitchwire.Contracts/Pitchwire.Contracts.csproj" />
+    <Project Path="src/Pitchwire.Feed/Pitchwire.Feed.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Pitchwire.LicenseAudit/Pitchwire.LicenseAudit.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>pitchwire-feed</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pitchwire.Contracts/Pitchwire.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
