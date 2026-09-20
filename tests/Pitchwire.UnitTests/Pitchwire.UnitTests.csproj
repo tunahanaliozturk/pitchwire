@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Pitchwire.Api/Pitchwire.Api.csproj" />
+    <ProjectReference Include="../../src/Pitchwire.Feed/Pitchwire.Feed.csproj" />
   </ItemGroup>
 
   <ItemGroup>

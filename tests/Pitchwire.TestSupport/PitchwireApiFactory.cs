@@ -24,6 +24,10 @@ public sealed class PitchwireApiFactory(string connectionString, Action<IService
         builder.UseSetting("ConnectionStrings:Postgres", connectionString);
         builder.UseSetting("Ingest:Secret", IngestSecret);
 
+        // A test has no patience for the half minute of silence that marks a match quiet in a real
+        // deployment, and waiting it out would only prove that Task.Delay works.
+        builder.UseSetting("Ingest:StaleAfter", "00:00:00");
+
         // Several hosts come up in one process across a suite. The Windows event log provider poisons
         // later log writes once the first host disposes it, so no host here keeps a provider.
         builder.ConfigureLogging(logging => logging.ClearProviders());

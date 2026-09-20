@@ -120,6 +120,7 @@ public sealed class EventIngestor(PitchwireDbContext db, TimeProvider clock, Gap
                 // log rather than adjusted, because an adjustment needs a correct inverse for every
                 // event type and a sign error there is unrecoverable.
                 rebuildNeeded = true;
+                match.LastEventAt = stored.ReceivedAt;
                 continue;
             }
 
@@ -130,6 +131,7 @@ public sealed class EventIngestor(PitchwireDbContext db, TimeProvider clock, Gap
             }
 
             MatchStateReducer.Apply(match, stored);
+            match.LastEventAt = stored.ReceivedAt;
         }
 
         if (rebuildNeeded)

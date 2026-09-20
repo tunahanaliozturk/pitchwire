@@ -32,6 +32,16 @@ public sealed class IngestOptions
     public Uri FeedBaseAddress { get; set; } = new("http://localhost:5081/");
 
     /// <summary>
+    /// How long a live match may go without an event before the service asks the provider what it
+    /// missed. A dropped final whistle leaves a match live forever otherwise, because there is no
+    /// later event to reveal the hole.
+    /// </summary>
+    public TimeSpan StaleAfter { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>How often quiet matches are looked for.</summary>
+    public TimeSpan SweepInterval { get; set; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
     /// The signature covers the whole body, so the body has to be buffered before it can be checked.
     /// This is the cap on what will be buffered.
     /// </summary>

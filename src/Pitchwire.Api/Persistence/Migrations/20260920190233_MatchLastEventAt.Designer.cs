@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pitchwire.Api.Persistence;
@@ -11,9 +12,11 @@ using Pitchwire.Api.Persistence;
 namespace Pitchwire.Api.Persistence.Migrations
 {
     [DbContext(typeof(PitchwireDbContext))]
-    partial class PitchwireDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260920190233_MatchLastEventAt")]
+    partial class MatchLastEventAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

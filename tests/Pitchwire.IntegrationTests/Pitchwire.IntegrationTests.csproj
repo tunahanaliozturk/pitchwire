@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Pitchwire.Feed/Pitchwire.Feed.csproj" />
     <ProjectReference Include="../Pitchwire.TestSupport/Pitchwire.TestSupport.csproj" />
   </ItemGroup>
 
