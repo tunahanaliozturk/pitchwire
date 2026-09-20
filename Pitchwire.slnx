@@ -4,6 +4,9 @@
     <Project Path="src/Pitchwire.Contracts/Pitchwire.Contracts.csproj" />
     <Project Path="src/Pitchwire.Feed/Pitchwire.Feed.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pitchwire.UnitTests/Pitchwire.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Pitchwire.LicenseAudit/Pitchwire.LicenseAudit.csproj" />
   </Folder>
