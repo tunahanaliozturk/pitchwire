@@ -1,0 +1,64 @@
+@host = http://localhost:5080
+@feed = http://localhost:5081
+@season = {{seasonId}}
+
+### The league and its fixture list, as the provider publishes them. Start here: the season identifier
+### every other request needs is derived from the catalogue, and this is the readable way to find it.
+GET {{feed}}/fixtures
+
+### What is being played right now. This list is never cached: it changes by the second, and a client
+### watching it is already being sent the changes.
+GET {{host}}/matches/live
+
+### The first page of a season's fixtures. Note the envelope: a value array, and a nextLink when there
+### is more. Follow the link rather than building the next request yourself.
+GET {{host}}/seasons/{{season}}/fixtures?$top=5
+
+### Page two, by sending back the token from the nextLink above, exactly as it was given. It encodes
+### the last row seen, so the next page is a seek and not a count.
+GET {{host}}/seasons/{{season}}/fixtures?$top=5&$skiptoken=REPLACE_WITH_THE_TOKEN_FROM_NEXTLINK
+
+### A token that cannot be read is refused rather than treated as the beginning. A client paging
+### through a list would otherwise start again at the top and repeat everything it had read.
+GET {{host}}/seasons/{{season}}/fixtures?$skiptoken=nonsense
+
+### Page size is capped. Asking for five thousand rows gets a hundred, because the slowest query in
+### the service should not be whatever somebody typed into a URL.
+GET {{host}}/seasons/{{season}}/fixtures?$top=5000
+
+### Results, newest first, which is the question a results list answers.
+GET {{host}}/seasons/{{season}}/results?$top=5
+
+### One match with its whole timeline. isDegraded is part of the contract: a score known to be missing
+### an event is still shown, and it says so.
+GET {{host}}/matches/REPLACE_WITH_A_MATCH_ID
+
+### The league table. Ordered by points, then goal difference, then goals scored.
+GET {{host}}/seasons/{{season}}/table
+
+### The scorer list. Own goals move the score and credit nobody, so they are not here.
+GET {{host}}/seasons/{{season}}/scorers?$top=10
+
+### A team's recent results, from that team's point of view.
+GET {{host}}/teams/REPLACE_WITH_A_TEAM_ID/form?seasonId={{season}}
+
+### Liveness is about the process. Readiness is about whether it can reach PostgreSQL, and it is meant
+### to be able to fail.
+GET {{host}}/health/live
+
+###
+GET {{host}}/health/ready
+
+### The ingestion boundary. Every request is signed over a length prefixed timestamp and the body, so
+### this one cannot be sent by hand: run the feed, or see RequestSignerTests for how the signature is
+### built. Without a valid signature it answers 401 and writes nothing, which is the point.
+POST {{host}}/ingest/events
+Content-Type: application/json
+X-Pitchwire-Signature: this-will-be-refused
+X-Pitchwire-Timestamp: 0
+
+{ "events": [] }
+
+### What the provider remembers sending for a match, from a given sequence onwards. This is the half a
+### push feed cannot do on its own, and it is how a gap gets closed.
+GET {{feed}}/matches/REPLACE_WITH_A_MATCH_ID/events?from=1

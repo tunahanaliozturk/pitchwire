@@ -133,8 +133,11 @@ because a client that pages through a list and starts again from the top will du
 seeing an error.
 
 **FR-12** League tables, top scorers and form are read from projections maintained during ingestion, not
-computed by scanning matches at request time. A `recompute` command rebuilds them from the event log, and
-a test asserts that the incremental result and the rebuilt result agree.
+computed by scanning matches at request time. A season's projections are rebuilt from its own finished
+matches and event log inside the ingestion transaction, rather than adjusted in place. Rebuilding cannot
+double count when a match finishes twice, when a late goal changes a result after the points were
+awarded, or when a rebuild moves a score after the fact, and each of those is a way an adjusted table
+goes quietly wrong. A test asserts that projecting the same season twice changes nothing.
 
 ### Live updates
 
@@ -254,9 +257,15 @@ the second and SignalR already pushes them, so a cache there would only manufact
 two screens. Cache tags are invalidated after the transaction commits, never before, because invalidating
 first repopulates the cache from the pre commit state if the transaction then rolls back.
 
-The `RemoveByTagAsync` behaviour of HybridCache against a Redis second level has changed between versions.
-An integration test verifies it on the version in use. If tag invalidation does not behave as expected,
-the fallback is an explicit key list, and the reason goes in ADR 0004.
+Tag invalidation was measured rather than assumed, and the measurement changed what the design can
+claim. Against Microsoft.Extensions.Caching.Hybrid 10.10.0 with a Redis second level, dropping a tag
+takes effect immediately in the instance that dropped it, including for an entry written in the same
+instant. It does not reach another instance: an entry both of them share through Redis stays live for
+the one that did not drop the tag. Two integration tests pin both halves of that.
+
+The single instance design in ADR 0008 is what makes this acceptable today. A second replica would need
+invalidation to travel between instances, which is one more reason that decision is written down rather
+than assumed.
 
 **PrimeVue is used where it earns its place** and nowhere else. Data tables, selects, date pickers,
 dialogs, toasts, switches and virtual scrolling come from the library, because getting their keyboard and
@@ -378,3 +387,6 @@ Written down here so they are choices rather than surprises.
   faithful, and nothing in the product should be read as a prediction.
 * Web Push is unavailable on some browser and platform combinations. The application degrades to in-app
   notifications there and says so rather than failing silently.
+* Cache invalidation does not cross instances. A tag dropped by one process leaves the shared entry in
+  place for any other process holding it, so a second replica would serve a stale table until the entry
+  expires. Measured, not assumed, and the single instance design is what keeps it harmless.

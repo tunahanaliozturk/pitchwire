@@ -2,10 +2,12 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Pitchwire.Api;
 using Pitchwire.Api.Ingestion;
+using Pitchwire.Api.Reads;
 using Pitchwire.Application;
 using Pitchwire.Application.Ingestion;
 using Pitchwire.Infrastructure;
 using Pitchwire.Infrastructure.Persistence;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,7 @@ builder.Services.AddOptions<IngestOptions>()
 var ingestSettings = builder.Configuration.GetSection(IngestOptions.SectionName).Get<IngestOptions>()
     ?? new IngestOptions();
 
+builder.Services.AddOpenApi();
 builder.AddPitchwireTelemetry();
 
 builder.Services.AddSingleton(TimeProvider.System);
@@ -26,7 +29,8 @@ builder.Services.AddPitchwireApplication();
 builder.Services.AddPitchwireInfrastructure(
     builder.Configuration.GetConnectionString("Postgres")
         ?? throw new InvalidOperationException("The Postgres connection string is not configured."),
-    ingestSettings.FeedBaseAddress);
+    ingestSettings.FeedBaseAddress,
+    builder.Configuration.GetConnectionString("Redis"));
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<PitchwireDbContext>("postgres", tags: ["ready"]);
@@ -61,6 +65,12 @@ app.UseWhen(
     ingest => ingest.UseMiddleware<IngestSignatureMiddleware>());
 
 app.MapIngestion();
+app.MapReads();
+
+// The document is served in every environment on purpose. A public read API whose shape is only
+// documented on a developer machine is an API nobody outside can use.
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.Run();
 
