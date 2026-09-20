@@ -39,6 +39,14 @@ public interface IPitchwireDbContext
 
     DbSet<PlayerSeasonStats> PlayerSeasonStats { get; }
 
+    DbSet<Device> Devices { get; }
+
+    DbSet<DeviceFavourite> DeviceFavourites { get; }
+
+    DbSet<PushSubscription> PushSubscriptions { get; }
+
+    DbSet<NotificationOutboxEntry> NotificationOutbox { get; }
+
     /// <summary>Transactions and raw SQL, which the ingestion boundary needs for its row lock.</summary>
     DatabaseFacade Database { get; }
 

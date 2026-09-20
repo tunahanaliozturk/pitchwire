@@ -220,8 +220,10 @@ on `(provider, provider_event_id)`.
 points per team and season. `player_season_stats` holds goals, assists, cards and minutes. Both are
 updated during ingestion.
 
-**Device data.** `devices`, `device_favourites`, `notification_preferences` (enabled event types, quiet
-hours, timezone) and `push_subscriptions` (endpoint, keys, failure count).
+**Device data.** `devices`, `device_favourites` and `push_subscriptions` (endpoint, keys, failure
+count). Notification preferences live on the device row rather than in a table of their own: they are
+one to one with a device and always read together with it, so a second table would add a join to every
+notification decision and buy nothing.
 
 **`notification_outbox`.** Device, match event, payload, status, attempt count and next attempt time.
 
@@ -277,6 +279,12 @@ and the goal highlight are written by hand, because they are the identity of the
 component would make it look like a template. The theme is a custom preset built on the project's own
 tokens, not a stock theme.
 
+**Globalization data is required.** Quiet hours are stored against the device's own IANA zone, and
+`TimeZoneInfo` cannot resolve one when a build runs with invariant globalization. That setting is
+therefore off here, against the usual default, and the runtime image carries ICU. Turning it off also
+surfaced cache keys that formatted numbers through the current culture, which would have stopped a key
+matching itself under another locale.
+
 **The API contract has one source.** The backend produces an OpenAPI document, and the client's types and
 Zod schemas are generated from it. Responses are parsed at the boundary, never cast. A CI job proves that
 renaming a field on the server breaks the frontend type check.
@@ -312,7 +320,9 @@ Security requirements:
   ingestion.
 * CORS is restricted to the known origin. CSP, HSTS and `X-Content-Type-Options` are set.
 * No secret is committed. Development uses user secrets, containers use environment variables. This
-  includes the VAPID private key and the ingestion HMAC secret.
+  includes the VAPID private key and the ingestion HMAC secret. When no VAPID pair is configured the
+  service generates one for that run and says so, rather than shipping a private key in a compose file
+  so that a demo starts one step faster.
 * Raw SQL appears only in the recompute path and is parameterised.
 * No dependency with a commercial licence, at any depth, in either the .NET or the npm graph. Enforced by
   the licence audit tool in CI.
@@ -390,6 +400,9 @@ Written down here so they are choices rather than surprises.
   faithful, and nothing in the product should be read as a prediction.
 * Web Push is unavailable on some browser and platform combinations. The application degrades to in-app
   notifications there and says so rather than failing silently.
+* Generated VAPID keys do not survive a restart. A demo started without configured keys can be
+  subscribed to, and those subscriptions stop working the next time the process starts. Configure a
+  pair through the environment for anything that has to keep working.
 * Cache invalidation does not cross instances. A tag dropped by one process leaves the shared entry in
   place for any other process holding it, so a second replica would serve a stale table until the entry
   expires. Measured, not assumed, and the single instance design is what keeps it harmless.

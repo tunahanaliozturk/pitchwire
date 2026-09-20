@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Pitchwire.Api;
+using Pitchwire.Api.Devices;
 using Pitchwire.Api.Ingestion;
 using Pitchwire.Api.Live;
 using Pitchwire.Api.Reads;
@@ -8,6 +9,7 @@ using Pitchwire.Application;
 using Pitchwire.Application.Ingestion;
 using Pitchwire.Application.Live;
 using Pitchwire.Infrastructure;
+using Pitchwire.Infrastructure.Notifications;
 using Pitchwire.Infrastructure.Persistence;
 using Scalar.AspNetCore;
 
@@ -27,6 +29,9 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<ILiveUpdates, SignalRLiveUpdates>();
 builder.Services.AddOpenApi();
 builder.AddPitchwireTelemetry();
+
+builder.Services.AddOptions<WebPushOptions>()
+    .Bind(builder.Configuration.GetSection(WebPushOptions.SectionName));
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddPitchwireApplication();
@@ -68,6 +73,7 @@ app.UseWhen(
     context => context.Request.Path.StartsWithSegments("/ingest"),
     ingest => ingest.UseMiddleware<IngestSignatureMiddleware>());
 
+app.MapDevices();
 app.MapIngestion();
 app.MapReads();
 

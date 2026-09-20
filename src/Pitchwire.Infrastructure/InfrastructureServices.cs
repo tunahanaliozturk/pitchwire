@@ -1,8 +1,11 @@
+using Lib.Net.Http.WebPush;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pitchwire.Application.Ingestion;
+using Pitchwire.Application.Notifications;
 using Pitchwire.Application.Persistence;
 using Pitchwire.Infrastructure.Ingestion;
+using Pitchwire.Infrastructure.Notifications;
 using Pitchwire.Infrastructure.Persistence;
 
 namespace Pitchwire.Infrastructure;
@@ -45,7 +48,12 @@ public static class InfrastructureServices
 
         services.AddHttpClient<IMatchFeed, HttpMatchFeed>(client => client.BaseAddress = feedBaseAddress);
 
+        services.AddSingleton<VapidKeys>();
+        services.AddHttpClient<PushServiceClient>();
+        services.AddScoped<IPushSender, WebPushSender>();
+
         services.AddHostedService<GapRepairService>();
+        services.AddHostedService<NotificationRelayService>();
         services.AddHostedService<StaleMatchSweepService>();
 
         return services;

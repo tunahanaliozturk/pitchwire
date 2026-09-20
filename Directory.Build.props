@@ -8,7 +8,12 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      Globalization data is required rather than optional here. Quiet hours are stored against the
+      device's own IANA zone, and with invariant globalization TimeZoneInfo cannot resolve one, so the
+      feature would throw at runtime instead of failing a build. The runtime image carries ICU.
+    -->
+    <InvariantGlobalization>false</InvariantGlobalization>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>

@@ -50,6 +50,10 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.19.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Notifications">
+    <PackageVersion Include="Lib.Net.Http.WebPush" Version="3.3.1" />
+  </ItemGroup>
+
   <ItemGroup Label="Realtime">
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.12" />
   </ItemGroup>

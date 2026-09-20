@@ -42,6 +42,47 @@ GET {{host}}/seasons/{{season}}/scorers?$top=10
 ### A team's recent results, from that team's point of view.
 GET {{host}}/teams/REPLACE_WITH_A_TEAM_ID/form?seasonId={{season}}
 
+### A first visit, which hands back an identity in an httpOnly cookie. Everything below needs it.
+POST {{host}}/devices
+
+### What this browser has chosen so far. Without the cookie this answers 401, because there is nobody
+### to answer about.
+GET {{host}}/devices/me
+
+### Follow a team. Identifiers for teams that do not exist are ignored rather than stored.
+PUT {{host}}/devices/me/favourites
+Content-Type: application/json
+
+{ "teamIds": ["REPLACE_WITH_A_TEAM_ID"] }
+
+### How and when to be told. The zone is checked here rather than when a goal is scored, so a zone
+### this service cannot resolve fails now instead of silencing notifications months later.
+PUT {{host}}/devices/me/preferences
+Content-Type: application/json
+
+{
+  "timeZoneId": "Europe/Istanbul",
+  "quietHoursStart": "22:00:00",
+  "quietHoursEnd": "08:00:00",
+  "notifyOnGoal": true,
+  "notifyOnRedCard": true,
+  "notifyOnKickoff": false,
+  "notifyOnFullTime": true
+}
+
+### The public half of the signing key, which a browser needs before it can subscribe.
+GET {{host}}/push/public-key
+
+### Where to reach this browser when its tab is closed. A browser re-subscribing sends the same
+### endpoint, and it moves rather than adding a second row, so one goal never arrives twice.
+POST {{host}}/devices/me/push-subscriptions
+Content-Type: application/json
+
+{
+  "endpoint": "https://push.example/REPLACE",
+  "keys": { "p256dh": "REPLACE", "auth": "REPLACE" }
+}
+
 ### Liveness is about the process. Readiness is about whether it can reach PostgreSQL, and it is meant
 ### to be able to fail.
 GET {{host}}/health/live

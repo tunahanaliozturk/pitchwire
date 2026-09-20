@@ -38,6 +38,13 @@ public sealed class IngestOptions
     /// </summary>
     public TimeSpan StaleAfter { get; set; } = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// How often the notification outbox is drained. Short, because the difference between hearing
+    /// about a goal now and hearing about it in a minute is the difference between this product and a
+    /// results page.
+    /// </summary>
+    public TimeSpan RelayInterval { get; set; } = TimeSpan.FromSeconds(2);
+
     /// <summary>How often quiet matches are looked for.</summary>
     public TimeSpan SweepInterval { get; set; } = TimeSpan.FromSeconds(10);
 
