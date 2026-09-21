@@ -7,7 +7,8 @@ import {
 import { useQueryClient } from "@tanstack/vue-query";
 import { onScopeDispose, ref } from "vue";
 
-import type { MatchSummary, PageOfMatchSummary } from "@/api/contracts";
+import type { PageOfMatchSummary } from "@/api/contracts";
+import { applyUpdate } from "@/composables/liveList";
 
 /**
  * What the server pushes while a match is being played.
@@ -55,21 +56,24 @@ export function useLiveFeed() {
     const lastGoalAt = ref<Record<string, number>>({});
 
     const apply = (update: MatchUpdate) => {
-        const patch = (match: MatchSummary): MatchSummary =>
-            match.id === update.matchId
-                ? {
-                      ...match,
-                      minute: update.minute,
-                      status: update.status,
-                      homeScore: update.homeScore,
-                      awayScore: update.awayScore,
-                      isDegraded: update.isDegraded,
-                  }
-                : match;
+        let unknown = false;
 
-        client.setQueriesData<PageOfMatchSummary>({ queryKey: ["live"] }, (page) =>
-            page ? { ...page, value: page.value.map(patch) } : page,
-        );
+        client.setQueriesData<PageOfMatchSummary>({ queryKey: ["live"] }, (page) => {
+            if (!page) {
+                return page;
+            }
+
+            const result = applyUpdate(page, update);
+            unknown ||= result.unknownMatch;
+
+            return result.page;
+        });
+
+        if (unknown) {
+            // A match the list has never seen. A delta has a score and a minute, not two team names, so
+            // there is nothing to build a row from and the list is asked for again.
+            void client.invalidateQueries({ queryKey: ["live"] });
+        }
 
         if (
             update.event?.kind === "Goal" ||
