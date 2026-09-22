@@ -1,0 +1,101 @@
+### pitchwire, by hand
+#
+# Every read endpoint, in the order somebody would actually meet them. Works in the VS Code REST
+# Client, in Rider and in Visual Studio. Bring the stack up first:
+#
+#   docker compose up -d --wait
+#
+# The ingest endpoints are not here. They need an HMAC over a length prefixed timestamp and body, and
+# a request file cannot compute one. The feed does it in `RequestSigner`, and the integration tests
+# do it against a real host, which is a better example than a signature pasted into a comment would
+# be.
+
+@api = http://localhost:5080
+
+### Is it up
+GET {{api}}/health/ready
+
+### Countries, and how many competitions each one has
+GET {{api}}/countries
+
+### The competitions in one country, top flight first
+GET {{api}}/countries/england/leagues
+
+### Everything being played right now
+# The envelope is `value` plus `nextLink`. `$top` defaults to 50 and is capped at 100.
+GET {{api}}/matches/live?$top=10
+
+### One match: the score, the timeline, both team sheets and the statistics
+# Take an id from the live list above.
+@matchId = 00000000-0000-0000-0000-000000000000
+GET {{api}}/matches/{{matchId}}
+
+### The events of a match from a sequence onwards
+# What a client asks for after a dropped connection, rather than refetching the whole match.
+GET {{api}}/matches/{{matchId}}/events?from=0
+
+### The seasons currently being played
+GET {{api}}/seasons
+
+### The fixture list
+# `nextLink` in the response carries the `$skiptoken` for the next page. There is no `$skip`.
+@seasonId = 00000000-0000-0000-0000-000000000000
+GET {{api}}/seasons/{{seasonId}}/fixtures?$top=5
+
+### The next page
+# Paste the token from the `nextLink` above.
+GET {{api}}/seasons/{{seasonId}}/fixtures?$top=5&$skiptoken=
+
+### Results, newest first
+GET {{api}}/seasons/{{seasonId}}/results?$top=5
+
+### The league table
+GET {{api}}/seasons/{{seasonId}}/table
+
+### The scorers
+GET {{api}}/seasons/{{seasonId}}/scorers?$top=10
+
+### A team's recent form
+@teamId = 00000000-0000-0000-0000-000000000000
+GET {{api}}/teams/{{teamId}}/form?seasonId={{seasonId}}&count=5
+
+### This browser's identity
+# 401 until this client has registered, which is a normal answer rather than an error.
+GET {{api}}/devices/me
+
+### Register this browser
+POST {{api}}/devices
+Content-Type: application/json
+
+{}
+
+### Follow some teams
+# Replaces the whole list. Send an empty array to follow nobody.
+PUT {{api}}/devices/me/favourites
+Content-Type: application/json
+
+{
+  "teamIds": ["{{teamId}}"]
+}
+
+### Set what to be told about, and when
+PUT {{api}}/devices/me/preferences
+Content-Type: application/json
+
+{
+  "timeZoneId": "Europe/Istanbul",
+  "quietHoursStart": "23:00:00",
+  "quietHoursEnd": "08:00:00",
+  "notifyOnGoal": true,
+  "notifyOnRedCard": false,
+  "notifyOnKickoff": false,
+  "notifyOnFullTime": true
+}
+
+### The public key a browser needs to subscribe to push
+GET {{api}}/push/public-key
+
+### The OpenAPI document
+# The browser types are generated from this, and a CI job fails if the two have drifted apart. There
+# is a readable version of the same thing at http://localhost:5080/scalar/v1
+GET {{api}}/openapi/v1.json

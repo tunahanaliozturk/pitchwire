@@ -411,9 +411,9 @@ stack, Playwright journeys against that stack, and the contract drift job descri
 | M2 | Read API: fixtures, match detail, table projection, pagination, HybridCache, OpenAPI document |
 | M3 | Live updates: SignalR groups, delta broadcast, catch-up by sequence |
 | M4 | Notifications: devices, favourites, preferences, quiet hours, outbox relay, Web Push |
-| M5 | Frontend core: Vue and PrimeVue preset, live list, match detail, fixtures, table, SignalR, generated contract |
+| M5 | Frontend core: Vue, live list, match detail, fixtures, table, SignalR, generated contract. PrimeVue was dropped here rather than pinned, for the reason in ADR 0010 |
 | M6 | PWA and push: service worker, subscription flow, preferences screen, deep links from notifications |
-| M7 | Depth: lineups, substitutions, match statistics, top scorers, form, multiple leagues, season archive |
+| M7 | Depth: lineups on a pitch, substitutions, match statistics, player ratings, top scorers, form, countries and leagues. The season archive was dropped: with one season per competition it would be a screen listing one row |
 | M8 | Finish: benchmarks, load test, ADRs, operations guide, HTTP file, README with measured numbers, changelog, v1.0.0 |
 
 A working product exists at the end of M6. M7 adds depth and M8 finishes the repository.
