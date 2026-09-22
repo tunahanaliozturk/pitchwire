@@ -58,12 +58,14 @@ public static class IngestClientExtensions
         IReadOnlyList<MatchEventPayload> events,
         string secret = PitchwireApiFactory.IngestSecret,
         DateTimeOffset? timestamp = null,
-        string? overrideSignature = null)
+        string? overrideSignature = null,
+        IReadOnlyList<LineupPayload>? lineups = null,
+        IReadOnlyList<StatisticsPayload>? statistics = null)
     {
         ArgumentNullException.ThrowIfNull(client);
 
         var stamp = timestamp ?? DateTimeOffset.UtcNow;
-        var body = JsonSerializer.SerializeToUtf8Bytes(new IngestRequest(events), Json);
+        var body = JsonSerializer.SerializeToUtf8Bytes(new IngestRequest(events, lineups, statistics), Json);
 
         using var content = new ByteArrayContent(body);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");

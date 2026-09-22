@@ -7,6 +7,8 @@ namespace Pitchwire.Infrastructure.Persistence;
 public sealed class PitchwireDbContext(DbContextOptions<PitchwireDbContext> options)
     : DbContext(options), IPitchwireDbContext
 {
+    public DbSet<Country> Countries => Set<Country>();
+
     public DbSet<League> Leagues => Set<League>();
 
     public DbSet<Season> Seasons => Set<Season>();
@@ -25,6 +27,12 @@ public sealed class PitchwireDbContext(DbContextOptions<PitchwireDbContext> opti
 
     public DbSet<PlayerSeasonStats> PlayerSeasonStats => Set<PlayerSeasonStats>();
 
+    public DbSet<MatchTeamSheet> MatchTeamSheets => Set<MatchTeamSheet>();
+
+    public DbSet<MatchLineupEntry> MatchLineups => Set<MatchLineupEntry>();
+
+    public DbSet<MatchStatistics> MatchStatistics => Set<MatchStatistics>();
+
     public DbSet<Device> Devices => Set<Device>();
 
     public DbSet<DeviceFavourite> DeviceFavourites => Set<DeviceFavourite>();
@@ -37,12 +45,24 @@ public sealed class PitchwireDbContext(DbContextOptions<PitchwireDbContext> opti
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
+        modelBuilder.Entity<Country>(country =>
+        {
+            country.Property(x => x.Name).HasMaxLength(80);
+            country.Property(x => x.Code).HasMaxLength(2).IsFixedLength();
+            country.Property(x => x.Slug).HasMaxLength(80);
+            country.HasIndex(x => x.Slug).IsUnique();
+            country.HasIndex(x => x.Code).IsUnique();
+        });
+
         modelBuilder.Entity<League>(league =>
         {
             league.HasIndex(x => x.Slug).IsUnique();
             league.Property(x => x.Name).HasMaxLength(120);
-            league.Property(x => x.Country).HasMaxLength(80);
             league.Property(x => x.Slug).HasMaxLength(120);
+            league.HasOne(x => x.Country).WithMany().HasForeignKey(x => x.CountryId);
+
+            // A country's leagues are listed by tier, which is this pair.
+            league.HasIndex(x => new { x.CountryId, x.Tier });
         });
 
         modelBuilder.Entity<Season>(season =>
@@ -62,6 +82,7 @@ public sealed class PitchwireDbContext(DbContextOptions<PitchwireDbContext> opti
         modelBuilder.Entity<Player>(player =>
         {
             player.Property(x => x.Name).HasMaxLength(120);
+            player.Property(x => x.Position).HasConversion<string>().HasMaxLength(16);
             player.HasOne(x => x.Team).WithMany().HasForeignKey(x => x.TeamId);
             player.HasIndex(x => x.TeamId);
         });
@@ -120,6 +141,26 @@ public sealed class PitchwireDbContext(DbContextOptions<PitchwireDbContext> opti
             // The table is read in table order. Points and goals decide it, and the difference is
             // computed from the two columns already here.
             standing.HasIndex(x => new { x.SeasonId, x.Points, x.GoalsFor });
+        });
+
+        modelBuilder.Entity<MatchTeamSheet>(sheet =>
+        {
+            sheet.HasKey(x => new { x.MatchId, x.TeamId });
+            sheet.Property(x => x.Formation).HasMaxLength(16);
+        });
+
+        modelBuilder.Entity<MatchLineupEntry>(entry =>
+        {
+            entry.HasKey(x => new { x.MatchId, x.TeamId, x.PlayerId });
+            entry.Property(x => x.Position).HasConversion<string>().HasMaxLength(16);
+            entry.HasOne(x => x.Player).WithMany().HasForeignKey(x => x.PlayerId);
+        });
+
+        modelBuilder.Entity<MatchStatistics>(stats =>
+        {
+            // One row per side, replaced by each newer snapshot. The history is not worth keeping: the
+            // numbers are cumulative, so every older row is contained in the newest one.
+            stats.HasKey(x => new { x.MatchId, x.TeamId });
         });
 
         modelBuilder.Entity<Device>(device =>

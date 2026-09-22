@@ -21,6 +21,8 @@ namespace Pitchwire.Application.Persistence;
 /// </remarks>
 public interface IPitchwireDbContext
 {
+    DbSet<Country> Countries { get; }
+
     DbSet<League> Leagues { get; }
 
     DbSet<Season> Seasons { get; }
@@ -38,6 +40,12 @@ public interface IPitchwireDbContext
     DbSet<Standing> Standings { get; }
 
     DbSet<PlayerSeasonStats> PlayerSeasonStats { get; }
+
+    DbSet<MatchTeamSheet> MatchTeamSheets { get; }
+
+    DbSet<MatchLineupEntry> MatchLineups { get; }
+
+    DbSet<MatchStatistics> MatchStatistics { get; }
 
     DbSet<Device> Devices { get; }
 

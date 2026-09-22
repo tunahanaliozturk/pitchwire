@@ -31,6 +31,7 @@ that were rolled back, or miss goals that were saved.
 ### In scope
 
 * Live match view with minute by minute events, updated without a page refresh.
+* Several leagues across several countries, chosen by country and then by league.
 * Match detail with the event timeline, lineups, substitutions and match statistics.
 * Fixtures and results, by league, by round and by team, across multiple leagues and past seasons.
 * League tables, top scorers and recent form, all derived from match events.
@@ -184,6 +185,32 @@ duplicated in a new tab. The destination is checked before it is used: only a pa
 application is accepted, and a protocol relative one such as `//elsewhere` is refused along with an
 absolute URL. A notification that can send somebody anywhere is a notification worth sending for the
 wrong reasons.
+
+### Squads, statistics and ratings
+
+**FR-29** Leagues are grouped by country, and a country's leagues are listed top flight first. The
+countries are real and every club, league and player is invented: real clubs would put somebody else's
+trademarks in a demo, and invented ones in a real country let a reader see names that look like home
+without anybody's badge on them.
+
+**FR-30** A match carries both team sheets, with a formation, a starting eleven and a bench. Team
+sheets are snapshots rather than events, so they have no sequence: a later one replaces the earlier
+one entirely, because a player dropped from a corrected sheet has to disappear rather than linger.
+
+**FR-31** A match carries per side statistics: possession, shots, shots on target, corners, fouls and
+offsides. They are cumulative snapshots, so only the newest is kept and one that arrives from an
+earlier minute is ignored. Writing it would walk the shot count backwards, which is the statistics
+version of a score going down.
+
+**FR-32** Every player named on a sheet gets the minutes they played, worked out from the
+substitutions and dismissals in the event log rather than reported separately. A reported number could
+disagree with the log, and then one of the two would be wrong with nothing to say which.
+
+**FR-33** A player who was on the pitch long enough gets a match rating derived from the log: goals,
+penalties, own goals, assists, cards, the result, and for a goalkeeper or defender what got past them.
+It is a model and a deliberately simple one, not a scout's opinion, and every point in it comes from
+something recorded. A player on for less than twenty minutes is not rated at all, because a number for
+three minutes of stoppage time would claim to know something the log does not.
 
 ### Frontend
 
@@ -389,6 +416,8 @@ Each one states the alternative that lost and what was given up.
 | 0009 | Anonymous device identity, and why an identity provider was not used here |
 | 0010 | Why no component library is in the bundle yet, and why it will be PrimeVue 4.5.5 rather than 5 |
 | 0011 | A separate wire model, translated at the boundary, rather than one enum shared with the provider |
+| 0012 | Player ratings derived from the event log, and why they are a model rather than an opinion |
+| 0013 | Team sheets and statistics as snapshots in the same signed batch, with their own ordering rule |
 
 ## 11. Acceptance criteria
 

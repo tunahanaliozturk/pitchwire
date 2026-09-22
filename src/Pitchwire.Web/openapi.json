@@ -215,12 +215,78 @@
         }
       }
     },
+    "/countries": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "Countries",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountrySummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/countries/{countrySlug}/leagues": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "Leagues",
+        "parameters": [
+          {
+            "name": "countrySlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeagueSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seasons": {
       "get": {
         "tags": [
           "ReadEndpoints"
         ],
         "operationId": "Seasons",
+        "parameters": [
+          {
+            "name": "leagueId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -581,6 +647,35 @@
   },
   "components": {
     "schemas": {
+      "CountrySummary": {
+        "required": [
+          "id",
+          "name",
+          "code",
+          "slug",
+          "leagues"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "leagues": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "DeviceSettings": {
         "required": [
           "id",
@@ -702,6 +797,24 @@
             "items": {
               "$ref": "#/components/schemas/MatchEventPayload"
             }
+          },
+          "lineups": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LineupPayload"
+            }
+          },
+          "statistics": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/StatisticsPayload"
+            }
           }
         }
       },
@@ -724,13 +837,185 @@
           "rejected": {
             "type": "integer",
             "format": "int32"
+          },
+          "lineupsStored": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          },
+          "statisticsStored": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
+      },
+      "LeagueSummary": {
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "tier",
+          "countryId",
+          "country",
+          "currentSeasonId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "country": {
+            "type": "string"
+          },
+          "currentSeasonId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "LineupPayload": {
+        "required": [
+          "matchId",
+          "teamId",
+          "formation",
+          "players"
+        ],
+        "type": "object",
+        "properties": {
+          "matchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formation": {
+            "type": "string"
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineupPlayerPayload"
+            }
+          }
+        }
+      },
+      "LineupPlayerPayload": {
+        "required": [
+          "playerId",
+          "shirtNumber",
+          "position",
+          "starter"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shirtNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "position": {
+            "$ref": "#/components/schemas/LineupPosition"
+          },
+          "starter": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LineupPlayerView": {
+        "required": [
+          "playerId",
+          "player",
+          "shirtNumber",
+          "position",
+          "starter",
+          "minutesPlayed",
+          "goals",
+          "assists",
+          "yellowCards",
+          "redCards",
+          "rating"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "player": {
+            "type": "string"
+          },
+          "shirtNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "position": {
+            "type": "string"
+          },
+          "starter": {
+            "type": "boolean"
+          },
+          "minutesPlayed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "goals": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assists": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "yellowCards": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "redCards": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rating": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "LineupPosition": {
+        "type": "integer"
       },
       "MatchDetail": {
         "required": [
           "match",
-          "timeline"
+          "timeline",
+          "lineups",
+          "statistics"
         ],
         "type": "object",
         "properties": {
@@ -741,6 +1026,18 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MatchEventView"
+            }
+          },
+          "lineups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeamSheetView"
+            }
+          },
+          "statistics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeamStatisticsView"
             }
           }
         }
@@ -801,6 +1098,13 @@
           "occurredAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "replacedPlayerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -1032,6 +1336,58 @@
           }
         }
       },
+      "StatisticsPayload": {
+        "required": [
+          "matchId",
+          "teamId",
+          "asOfMinute",
+          "possession",
+          "shots",
+          "shotsOnTarget",
+          "corners",
+          "fouls",
+          "offsides"
+        ],
+        "type": "object",
+        "properties": {
+          "matchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOfMinute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "possession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shots": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shotsOnTarget": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "corners": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fouls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offsides": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "SubscriptionKeys": {
         "required": [
           "p256dh",
@@ -1139,6 +1495,76 @@
           },
           "slug": {
             "type": "string"
+          }
+        }
+      },
+      "TeamSheetView": {
+        "required": [
+          "teamId",
+          "formation",
+          "players"
+        ],
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formation": {
+            "type": "string"
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineupPlayerView"
+            }
+          }
+        }
+      },
+      "TeamStatisticsView": {
+        "required": [
+          "teamId",
+          "asOfMinute",
+          "possession",
+          "shots",
+          "shotsOnTarget",
+          "corners",
+          "fouls",
+          "offsides"
+        ],
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOfMinute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "possession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shots": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shotsOnTarget": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "corners": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fouls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offsides": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }

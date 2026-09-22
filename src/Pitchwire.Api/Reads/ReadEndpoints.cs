@@ -17,6 +17,8 @@ internal static class ReadEndpoints
 
         // Cast, because a Task<IResult> method group binds as a RequestDelegate, runs the handler and
         // throws the result away. The symptom is a 200 with an empty body and nothing in the log.
+        routes.MapGet("/countries", (Delegate)CountriesAsync).WithName("Countries");
+        routes.MapGet("/countries/{countrySlug}/leagues", (Delegate)LeaguesAsync).WithName("Leagues");
         routes.MapGet("/seasons", (Delegate)SeasonsAsync).WithName("Seasons");
         routes.MapGet("/matches/live", (Delegate)LiveAsync).WithName("LiveMatches");
         routes.MapGet("/matches/{matchId:guid}", (Delegate)DetailAsync).WithName("MatchDetail");
@@ -102,10 +104,22 @@ internal static class ReadEndpoints
         CancellationToken cancellationToken) =>
         TypedResults.Ok(await reads.TimelineAsync(matchId, from is > 0 ? from.Value : 1, cancellationToken));
 
-    private static async Task<Ok<IReadOnlyList<SeasonSummary>>> SeasonsAsync(
+    private static async Task<Ok<IReadOnlyList<CountrySummary>>> CountriesAsync(
         SeasonReads reads,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(await reads.SeasonsAsync(cancellationToken));
+        TypedResults.Ok(await reads.CountriesAsync(cancellationToken));
+
+    private static async Task<Ok<IReadOnlyList<LeagueSummary>>> LeaguesAsync(
+        SeasonReads reads,
+        string countrySlug,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await reads.LeaguesAsync(countrySlug, cancellationToken));
+
+    private static async Task<Ok<IReadOnlyList<SeasonSummary>>> SeasonsAsync(
+        SeasonReads reads,
+        [FromQuery] Guid? leagueId,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await reads.SeasonsAsync(leagueId, cancellationToken));
 
     private static async Task<Ok<IReadOnlyList<TableRow>>> TableAsync(
         SeasonReads reads,

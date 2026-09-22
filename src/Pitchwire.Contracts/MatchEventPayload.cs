@@ -11,6 +11,11 @@ namespace Pitchwire.Contracts;
 /// Position within the match, starting at one. The provider promises the numbering, not the delivery
 /// order, which is why the ingestion boundary compares rather than trusts.
 /// </param>
+/// <param name="ReplacedPlayerId">
+/// For a substitution, the player going off. <c>PlayerId</c> is the one coming on. Carried as its own
+/// field rather than borrowed from the assist, because a field that means two things depending on the
+/// event kind is a field somebody reads the wrong way.
+/// </param>
 /// <param name="Minute">
 /// Match minute as the provider reports it. Server time never derives this: it knows nothing about
 /// half time, stoppage time or a suspended match.
@@ -24,4 +29,5 @@ public sealed record MatchEventPayload(
     Guid TeamId,
     Guid? PlayerId,
     Guid? AssistPlayerId,
-    DateTimeOffset OccurredAt);
+    DateTimeOffset OccurredAt,
+    Guid? ReplacedPlayerId = null);

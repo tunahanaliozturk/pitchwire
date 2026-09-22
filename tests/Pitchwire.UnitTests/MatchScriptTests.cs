@@ -18,8 +18,8 @@ public sealed class MatchScriptTests
     [Fact]
     public void The_same_seed_produces_the_same_match()
     {
-        var first = MatchScript.For(Fixture, seed: 42);
-        var second = MatchScript.For(Fixture, seed: 42);
+        var first = MatchScript.For(Fixture, seed: 42).Events;
+        var second = MatchScript.For(Fixture, seed: 42).Events;
 
         second.ShouldBe(first);
     }
@@ -27,8 +27,8 @@ public sealed class MatchScriptTests
     [Fact]
     public void A_different_seed_produces_a_different_match()
     {
-        var first = MatchScript.For(Fixture, seed: 42);
-        var second = MatchScript.For(Fixture, seed: 43);
+        var first = MatchScript.For(Fixture, seed: 42).Events;
+        var second = MatchScript.For(Fixture, seed: 43).Events;
 
         second.ShouldNotBe(first);
     }
@@ -36,7 +36,7 @@ public sealed class MatchScriptTests
     [Fact]
     public void Sequences_start_at_one_and_never_repeat()
     {
-        var script = MatchScript.For(Fixture, seed: 7);
+        var script = MatchScript.For(Fixture, seed: 7).Events;
 
         script.Select(e => e.Sequence).ShouldBe(Enumerable.Range(1, script.Count));
     }
@@ -46,7 +46,7 @@ public sealed class MatchScriptTests
     {
         // The consumer keys idempotency on this string. Two events sharing one would make the second
         // look like a redelivery of the first, and it would be discarded.
-        var script = MatchScript.For(Fixture, seed: 7);
+        var script = MatchScript.For(Fixture, seed: 7).Events;
 
         script.Select(e => e.ProviderEventId).Distinct().Count().ShouldBe(script.Count);
     }
@@ -54,7 +54,7 @@ public sealed class MatchScriptTests
     [Fact]
     public void Every_match_opens_with_a_period_start_and_closes_with_a_period_end()
     {
-        var script = MatchScript.For(Fixture, seed: 11);
+        var script = MatchScript.For(Fixture, seed: 11).Events;
 
         script[0].Kind.ShouldBe(MatchEventKind.PeriodStart);
         script[0].Minute.ShouldBe(0);
@@ -67,7 +67,7 @@ public sealed class MatchScriptTests
     [Fact]
     public void Every_event_names_one_of_the_two_teams_on_the_pitch()
     {
-        var script = MatchScript.For(Fixture, seed: 19);
+        var script = MatchScript.For(Fixture, seed: 19).Events;
 
         script.ShouldAllBe(e => e.TeamId == Fixture.Home.Id || e.TeamId == Fixture.Away.Id);
     }
@@ -78,7 +78,7 @@ public sealed class MatchScriptTests
         // An own goal is recorded against the side that conceded it, so the player on the event
         // belongs to that side too. Crediting the goal to the other team is the consumer's job, and
         // this is what makes it possible to check that it did.
-        var script = MatchScript.For(Fixture, seed: 23);
+        var script = MatchScript.For(Fixture, seed: 23).Events;
 
         foreach (var goal in script.Where(e => e.Kind is MatchEventKind.Goal or MatchEventKind.OwnGoal or MatchEventKind.PenaltyGoal))
         {
@@ -91,7 +91,7 @@ public sealed class MatchScriptTests
     [Fact]
     public void An_assist_is_never_credited_to_the_scorer()
     {
-        var script = MatchScript.For(Fixture, seed: 29);
+        var script = MatchScript.For(Fixture, seed: 29).Events;
 
         script.ShouldAllBe(e => e.AssistPlayerId == null || e.AssistPlayerId != e.PlayerId);
     }

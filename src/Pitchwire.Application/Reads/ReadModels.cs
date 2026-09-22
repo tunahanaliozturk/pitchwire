@@ -46,7 +46,18 @@ public sealed record MatchEventView(
     string? Player,
     string? Assist);
 
-public sealed record MatchDetail(MatchSummary Match, IReadOnlyList<MatchEventView> Timeline);
+/// <summary>
+/// A country and what leagues it has here.
+/// </summary>
+public sealed record CountrySummary(Guid Id, string Name, string Code, string Slug, int Leagues);
+
+public sealed record LeagueSummary(Guid Id, string Name, string Slug, int Tier, Guid CountryId, string Country, Guid? CurrentSeasonId);
+
+public sealed record MatchDetail(
+    MatchSummary Match,
+    IReadOnlyList<MatchEventView> Timeline,
+    IReadOnlyList<TeamSheetView> Lineups,
+    IReadOnlyList<TeamStatisticsView> Statistics);
 
 public sealed record TableRow(
     int Position,

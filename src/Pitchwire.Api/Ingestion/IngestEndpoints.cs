@@ -20,10 +20,20 @@ internal static class IngestEndpoints
     private static async Task<Accepted<IngestResponse>> HandleAsync(
         IngestRequest request,
         EventIngestor ingestor,
+        SnapshotIngestor snapshots,
         IOptions<IngestOptions> options,
         CancellationToken cancellationToken)
     {
-        var response = await ingestor.IngestAsync(options.Value.Provider, request.Events, cancellationToken);
+        // Team sheets first: a goal that arrives in the same batch as the lineup should find the
+        // scorer already named, so the rating for that match is complete the moment it is asked for.
+        var (lineups, statistics) = await snapshots.StoreAsync(
+            request.Lineups ?? [],
+            request.Statistics ?? [],
+            cancellationToken);
+
+        var events = await ingestor.IngestAsync(options.Value.Provider, request.Events, cancellationToken);
+
+        var response = events with { LineupsStored = lineups, StatisticsStored = statistics };
 
         // Accepted rather than Created: the events are stored, but what a reader sees is derived from
         // them and the notifications they cause are still on their way.

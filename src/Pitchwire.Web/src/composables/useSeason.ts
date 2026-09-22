@@ -12,7 +12,7 @@ import { api } from "@/api/client";
 export function useSeason() {
     const query = useQuery({
         queryKey: ["seasons"],
-        queryFn: api.seasons,
+        queryFn: () => api.seasons(),
         staleTime: 60 * 60 * 1000,
     });
 

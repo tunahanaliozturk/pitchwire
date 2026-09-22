@@ -20,11 +20,57 @@ public sealed class SeasonReads(IPitchwireDbContext db, HybridCache cache)
         LocalCacheExpiration = TimeSpan.FromSeconds(30),
     };
 
+    /// <summary>
+    /// Every country that has a league here, with how many.
+    /// </summary>
+    /// <remarks>
+    /// The count is what lets a picker show a country that has something behind it and skip one that
+    /// does not, without a second request per row to find out.
+    /// </remarks>
+    public async Task<IReadOnlyList<CountrySummary>> CountriesAsync(CancellationToken cancellationToken) =>
+        // Filtered before the projection rather than after it. A predicate over a property of the
+        // projected record has nothing to translate to in SQL, and the whole query fails at runtime
+        // rather than at compile time.
+        await db.Countries
+            .AsNoTracking()
+            .Where(country => db.Leagues.Any(league => league.CountryId == country.Id))
+            .OrderBy(country => country.Name)
+            .Select(country => new CountrySummary(
+                country.Id,
+                country.Name,
+                country.Code,
+                country.Slug,
+                db.Leagues.Count(league => league.CountryId == country.Id)))
+            .ToListAsync(cancellationToken);
+
+    /// <summary>One country's leagues, top flight first.</summary>
+    public async Task<IReadOnlyList<LeagueSummary>> LeaguesAsync(string countrySlug, CancellationToken cancellationToken) =>
+        await db.Leagues
+            .AsNoTracking()
+            .Where(league => league.Country!.Slug == countrySlug)
+            .OrderBy(league => league.Tier)
+            .ThenBy(league => league.Name)
+            .Select(league => new LeagueSummary(
+                league.Id,
+                league.Name,
+                league.Slug,
+                league.Tier,
+                league.CountryId,
+                league.Country!.Name,
+                db.Seasons
+                    .Where(season => season.LeagueId == league.Id)
+                    .OrderByDescending(season => season.Year)
+                    .Select(season => (Guid?)season.Id)
+                    .FirstOrDefault()))
+            .ToListAsync(cancellationToken);
+
     /// <summary>Every season this service holds, newest first.</summary>
-    public async Task<IReadOnlyList<SeasonSummary>> SeasonsAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<SeasonSummary>> SeasonsAsync(Guid? leagueId, CancellationToken cancellationToken) =>
         await db.Seasons
             .AsNoTracking()
-            .OrderByDescending(season => season.Year)
+            .Where(season => leagueId == null || season.LeagueId == leagueId)
+            .OrderBy(season => season.League!.Tier)
+            .ThenByDescending(season => season.Year)
             .Select(season => new SeasonSummary(
                 season.Id,
                 season.Year,
