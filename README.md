@@ -113,6 +113,8 @@ docs/adr/       Thirteen decisions, each naming what it beat
 - [docs/adr](docs/adr/) — the decisions that would be expensive to reverse.
 - [docs/operations.md](docs/operations.md) — how to run it, what every setting does, and what to look
   at when it misbehaves.
+- [docs/api.http](docs/api.http) — every read endpoint, by hand. The same shape is browsable at
+  <http://localhost:5080/scalar/v1> while the stack is up.
 - [CHANGELOG.md](CHANGELOG.md) — what landed and when.
 
 ## Known limitations
