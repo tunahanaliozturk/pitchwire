@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <!--
+      Release only. A benchmark run against a debug build measures the debugger's arrangements rather
+      than the code, and BenchmarkDotNet refuses to run one at all.
+    -->
+    <Optimize>true</Optimize>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Pitchwire.Application/Pitchwire.Application.csproj" />
+    <ProjectReference Include="../../src/Pitchwire.Contracts/Pitchwire.Contracts.csproj" />
+    <ProjectReference Include="../../src/Pitchwire.Domain/Pitchwire.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

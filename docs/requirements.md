@@ -422,6 +422,8 @@ A working product exists at the end of M6. M7 adds depth and M8 finishes the rep
 
 Each one states the alternative that lost and what was given up.
 
+The records themselves are in [docs/adr](adr/).
+
 | ADR | Decision |
 |---|---|
 | 0001 | A separate feed process and a real ingestion boundary, rather than a background task inside the API |
@@ -433,7 +435,7 @@ Each one states the alternative that lost and what was given up.
 | 0007 | Four layers with the dependency arrow inward, and an EF shaped context port rather than a repository |
 | 0008 | Single instance by design, and what a second instance would cost |
 | 0009 | Anonymous device identity, and why an identity provider was not used here |
-| 0010 | Why no component library is in the bundle yet, and why it will be PrimeVue 4.5.5 rather than 5 |
+| 0010 | No component library in the bundle, and why PrimeVue was dropped rather than pinned |
 | 0011 | A separate wire model, translated at the boundary, rather than one enum shared with the provider |
 | 0012 | Player ratings derived from the event log, and why they are a model rather than an opinion |
 | 0013 | Team sheets and statistics as snapshots in the same signed batch, with their own ordering rule |

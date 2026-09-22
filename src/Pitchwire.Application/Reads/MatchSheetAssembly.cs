@@ -56,6 +56,11 @@ public static class MatchSheetAssembly
 
         var minutes = Participation.MinutesPlayed(lineup, events, match.Minute);
 
+        // One pass over the log rather than one pass per player. With eighteen names a side and a
+        // busy match that is the difference between a few hundred comparisons and several thousand,
+        // and it was worth doing because a benchmark said so rather than because it reads better.
+        var tallies = Count(events);
+
         return
         [
             .. lineup
@@ -68,26 +73,59 @@ public static class MatchSheetAssembly
                             .OrderByDescending(entry => entry.IsStarter)
                             .ThenBy(entry => entry.Position)
                             .ThenBy(entry => entry.ShirtNumber)
-                            .Select(entry => ToView(match, entry, events, minutes, names)),
+                            .Select(entry => ToView(match, entry, tallies, minutes, names)),
                     ])),
         ];
+    }
+
+    /// <summary>
+    /// What each named player did, counted once.
+    /// </summary>
+    private readonly record struct Tally(int Goals, int Penalties, int OwnGoals, int Assists, int Yellows, int Reds);
+
+    private static Dictionary<Guid, Tally> Count(IReadOnlyList<MatchEvent> events)
+    {
+        var tallies = new Dictionary<Guid, Tally>();
+
+        foreach (var @event in events)
+        {
+            if (@event.PlayerId is { } player)
+            {
+                var current = tallies.GetValueOrDefault(player);
+
+                tallies[player] = @event.Kind switch
+                {
+                    MatchEventKind.Goal => current with { Goals = current.Goals + 1 },
+                    MatchEventKind.PenaltyGoal => current with
+                    {
+                        Goals = current.Goals + 1,
+                        Penalties = current.Penalties + 1,
+                    },
+                    MatchEventKind.OwnGoal => current with { OwnGoals = current.OwnGoals + 1 },
+                    MatchEventKind.Yellow => current with { Yellows = current.Yellows + 1 },
+                    MatchEventKind.Red => current with { Reds = current.Reds + 1 },
+                    _ => current,
+                };
+            }
+
+            if (@event.AssistPlayerId is { } helper)
+            {
+                var current = tallies.GetValueOrDefault(helper);
+                tallies[helper] = current with { Assists = current.Assists + 1 };
+            }
+        }
+
+        return tallies;
     }
 
     private static LineupPlayerView ToView(
         Match match,
         MatchLineupEntry entry,
-        IReadOnlyList<MatchEvent> events,
+        Dictionary<Guid, Tally> tallies,
         IReadOnlyDictionary<Guid, int> minutes,
         IReadOnlyDictionary<Guid, string> names)
     {
-        var mine = events.Where(e => e.PlayerId == entry.PlayerId).ToList();
-
-        var goals = mine.Count(e => e.Kind is MatchEventKind.Goal or MatchEventKind.PenaltyGoal);
-        var penalties = mine.Count(e => e.Kind == MatchEventKind.PenaltyGoal);
-        var ownGoals = mine.Count(e => e.Kind == MatchEventKind.OwnGoal);
-        var assists = events.Count(e => e.AssistPlayerId == entry.PlayerId);
-        var yellows = mine.Count(e => e.Kind == MatchEventKind.Yellow);
-        var reds = mine.Count(e => e.Kind == MatchEventKind.Red);
+        var (goals, penalties, ownGoals, assists, yellows, reds) = tallies.GetValueOrDefault(entry.PlayerId);
 
         var forHome = entry.TeamId == match.HomeTeamId;
         var played = minutes.TryGetValue(entry.PlayerId, out var onPitch) ? onPitch : 0;
