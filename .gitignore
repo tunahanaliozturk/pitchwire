@@ -3,7 +3,6 @@
 [Oo]bj/
 [Oo]ut/
 artifacts/
-BenchmarkDotNet.Artifacts/
 
 # IDE
 .vs/
@@ -30,7 +29,8 @@ desktop.ini
 *.env
 appsettings.Local.json
 
-# BenchmarkDotNet writes here; committed results live under docs/benchmark-results.
+# BenchmarkDotNet writes its reports here. Nothing from a run is committed: the numbers worth keeping
+# are quoted in the README with the machine that produced them.
 BenchmarkDotNet.Artifacts/
 
 # Local agent configuration and generated knowledge graphs. Machine-local, never shared.

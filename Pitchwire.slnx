@@ -16,6 +16,9 @@
     <Project Path="tests/Pitchwire.TestSupport/Pitchwire.TestSupport.csproj" />
     <Project Path="tests/Pitchwire.UnitTests/Pitchwire.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/bench/">
+    <Project Path="bench/Pitchwire.Benchmarks/Pitchwire.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Pitchwire.LicenseAudit/Pitchwire.LicenseAudit.csproj" />
   </Folder>
