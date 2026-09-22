@@ -145,7 +145,7 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
         // Every name the page shows, in one query. A lookup per event would be an N plus one on the
         // busiest screen in the application.
         var wanted = events
-            .SelectMany(e => new[] { e.PlayerId, e.AssistPlayerId })
+            .SelectMany(e => new[] { e.PlayerId, e.AssistPlayerId, e.ReplacedPlayerId })
             .Concat(lineup.Select(entry => (Guid?)entry.PlayerId))
             .OfType<Guid>()
             .Distinct()
@@ -177,7 +177,8 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
                 e.Kind.ToString(),
                 e.TeamId,
                 e.PlayerId is { } player && names.TryGetValue(player, out var scorer) ? scorer : null,
-                e.AssistPlayerId is { } helper && names.TryGetValue(helper, out var assist) ? assist : null))
+                e.AssistPlayerId is { } helper && names.TryGetValue(helper, out var assist) ? assist : null,
+                e.ReplacedPlayerId is { } off && names.TryGetValue(off, out var leaving) ? leaving : null))
             .ToList();
 
         return new MatchDetail(
@@ -209,7 +210,8 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
                 e.Kind.ToString(),
                 e.TeamId,
                 db.Players.Where(p => p.Id == e.PlayerId).Select(p => p.Name).FirstOrDefault(),
-                db.Players.Where(p => p.Id == e.AssistPlayerId).Select(p => p.Name).FirstOrDefault()))
+                db.Players.Where(p => p.Id == e.AssistPlayerId).Select(p => p.Name).FirstOrDefault(),
+                db.Players.Where(p => p.Id == e.ReplacedPlayerId).Select(p => p.Name).FirstOrDefault()))
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<FormEntry>> FormAsync(
@@ -319,6 +321,11 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
             m.HomeScore,
             m.AwayScore,
             m.IsDegraded,
+            new LeagueRef(
+                m.Season!.League!.Id,
+                m.Season.League.Name,
+                m.Season.League.Slug,
+                m.Season.League.Country!.Name),
             new TeamRef(m.HomeTeam!.Id, m.HomeTeam.Name, m.HomeTeam.ShortName, m.HomeTeam.Slug),
             new TeamRef(m.AwayTeam!.Id, m.AwayTeam.Name, m.AwayTeam.ShortName, m.AwayTeam.Slug));
 }

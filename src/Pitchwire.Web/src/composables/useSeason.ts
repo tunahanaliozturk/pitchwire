@@ -1,22 +1,28 @@
-import { useQuery } from "@tanstack/vue-query";
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 
-import { api } from "@/api/client";
+import { useLeagueStore } from "@/stores/league";
 
 /**
- * The season everything else is about.
+ * The season everything else on a screen is about.
  *
- * Asked for rather than configured. A season identifier pasted into an environment variable is a
+ * A thin reading of the league the reader chose, so a view asks for one thing rather than three. The
+ * season is not configured anywhere: a season identifier pasted into an environment variable is a
  * value that is wrong on somebody's machine for a week before anybody notices.
  */
 export function useSeason() {
-    const query = useQuery({
-        queryKey: ["seasons"],
-        queryFn: () => api.seasons(),
-        staleTime: 60 * 60 * 1000,
+    const leagues = useLeagueStore();
+
+    onMounted(() => {
+        void leagues.load();
     });
 
-    const current = computed(() => query.data.value?.[0] ?? null);
-
-    return { current, isLoading: query.isLoading, error: query.error };
+    return {
+        current: computed(() =>
+            leagues.seasonId === null || leagues.league === null
+                ? null
+                : { id: leagues.seasonId, league: leagues.league.name },
+        ),
+        isLoading: computed(() => leagues.loading),
+        error: computed(() => null),
+    };
 }

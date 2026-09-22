@@ -17,10 +17,20 @@
     --accent-soft: #e6f7f1;
     --warn: #b45309;
 
+    /* The pitch. Grass is green in any light, so the surface barely moves between the two themes and
+       only the markings are dimmed. */
+    --pitch: #1f7a4d;
+    --pitch-line: rgb(255 255 255 / 45%);
+
     --radius: 6px;
     --gap: 12px;
 
+    /* One raised surface and one line weight. Anything more and a dense table starts to look like a
+       stack of cards rather than a list of results. */
+    --shadow: 0 1px 2px rgb(14 17 22 / 6%);
+
     /* A restrained scale. Data is dense here, so the steps are small and the rhythm is tight. */
+    --text-xs: 0.6875rem;
     --text-sm: 0.8125rem;
     --text-base: 0.9375rem;
     --text-lg: 1.125rem;
@@ -43,6 +53,8 @@
         --accent: #2dd4a0;
         --accent-soft: #10231d;
         --warn: #f59e0b;
+        --pitch: #155c3b;
+        --pitch-line: rgb(255 255 255 / 30%);
     }
 }
 
@@ -56,10 +68,19 @@
     --accent: #2dd4a0;
     --accent-soft: #10231d;
     --warn: #f59e0b;
+    --pitch: #155c3b;
+    --pitch-line: rgb(255 255 255 / 30%);
 }
 
 * {
     box-sizing: border-box;
+}
+
+/* Checkboxes in the one accent this design has. Left alone they arrive in the browser's blue, which
+   is the only colour on the page that came from somewhere else. */
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--accent);
 }
 
 body {

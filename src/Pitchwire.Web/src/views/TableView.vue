@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { computed } from "vue";
 
 import { api } from "@/api/client";
+import LeaguePicker from "@/components/LeaguePicker.vue";
 import { useSeason } from "@/composables/useSeason";
 
 const { current } = useSeason();
@@ -18,6 +19,7 @@ const rows = computed(() => data.value ?? []);
 
 <template>
     <section>
+        <LeaguePicker />
         <h1>{{ current?.league ?? "Table" }}</h1>
 
         <p v-if="isLoading">Loading.</p>
@@ -30,7 +32,7 @@ const rows = computed(() => data.value ?? []);
             <thead>
                 <tr>
                     <th scope="col" class="narrow">#</th>
-                    <th scope="col">Team</th>
+                    <th scope="col" class="left">Team</th>
                     <th scope="col" class="narrow">P</th>
                     <th scope="col" class="narrow">W</th>
                     <th scope="col" class="narrow">D</th>
@@ -82,6 +84,10 @@ thead th {
 .team {
     text-align: left;
     font-weight: 500;
+}
+
+.left {
+    text-align: left;
 }
 
 .narrow {

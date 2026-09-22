@@ -850,6 +850,30 @@
           }
         }
       },
+      "LeagueRef": {
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "country"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        }
+      },
       "LeagueSummary": {
         "required": [
           "id",
@@ -1115,7 +1139,8 @@
           "kind",
           "teamId",
           "player",
-          "assist"
+          "assist",
+          "replaced"
         ],
         "type": "object",
         "properties": {
@@ -1145,6 +1170,12 @@
               "null",
               "string"
             ]
+          },
+          "replaced": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1158,6 +1189,7 @@
           "homeScore",
           "awayScore",
           "isDegraded",
+          "league",
           "home",
           "away"
         ],
@@ -1192,6 +1224,9 @@
           },
           "isDegraded": {
             "type": "boolean"
+          },
+          "league": {
+            "$ref": "#/components/schemas/LeagueRef"
           },
           "home": {
             "$ref": "#/components/schemas/TeamRef"

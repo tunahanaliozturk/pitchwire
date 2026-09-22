@@ -212,7 +212,22 @@ It is a model and a deliberately simple one, not a scout's opinion, and every po
 something recorded. A player on for less than twenty minutes is not rated at all, because a number for
 three minutes of stoppage time would claim to know something the log does not.
 
+**FR-34** Every league in the catalogue plays, not only the first one. A country and league picker in
+front of five competitions that never kick off is a menu of empty rooms, and the grouping on the live
+board only earns its keep when more than one league is playing at once.
+
 ### Frontend
+
+**FR-35** Team sheets are drawn on a pitch as well as listed, with the home side at the bottom. The
+rows come from the formation string rather than from the recorded positions, so a sheet that reads
+3-5-2 looks like 3-5-2 even where the wing back in the middle band is listed as a defender. Anybody
+the formation does not account for is still placed: a corrected sheet with twelve names must not
+quietly lose the twelfth.
+
+**FR-36** The timeline reads as a match report rather than as a log. Periods are named at the ground's
+own words, so "Period ended 48'" followed by "Period started 46'" becomes half time and second half
+with no minute to argue with. A substitution names both players, and events are attributed to a team
+by its short name rather than as home or away.
 
 **FR-24** The application is installable and works as a PWA. The service worker handles push and
 notification clicks.
@@ -226,6 +241,10 @@ return it on close.
 **FR-27** Scores render with tabular figures so a 0 becoming a 1 does not shift the row.
 
 **FR-28** Motion, including the goal highlight, respects `prefers-reduced-motion`.
+
+**FR-37** Every link in the navigation resolves to a screen of its own. A link whose route was never
+registered still renders and still looks enabled, and nothing in a type checker or a linter notices,
+so the links are read out of the shell and put to the router in a test.
 
 ## 5. Data model
 

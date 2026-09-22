@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 
 import { api } from "@/api/client";
 import type { MatchSummary } from "@/api/contracts";
+import LeaguePicker from "@/components/LeaguePicker.vue";
 import MatchRow from "@/components/MatchRow.vue";
 import { useSeason } from "@/composables/useSeason";
 
@@ -44,6 +45,7 @@ const more = async () => {
 
 <template>
     <section>
+        <LeaguePicker />
         <h1>Fixtures</h1>
 
         <p v-if="isLoading">Loading.</p>

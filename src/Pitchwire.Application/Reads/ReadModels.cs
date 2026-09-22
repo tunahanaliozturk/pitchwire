@@ -19,6 +19,15 @@ public sealed record SeasonSummary(Guid Id, int Year, Guid LeagueId, string Leag
 public sealed record TeamRef(Guid Id, string Name, string ShortName, string Slug);
 
 /// <summary>
+/// The competition a match belongs to.
+/// </summary>
+/// <remarks>
+/// Carried on every match summary because a live list spanning several countries is unreadable
+/// without it: six matches in a row with no heading could be one league or six.
+/// </remarks>
+public sealed record LeagueRef(Guid Id, string Name, string Slug, string Country);
+
+/// <summary>
 /// A match as it appears in a list.
 /// </summary>
 /// <remarks>
@@ -35,6 +44,7 @@ public sealed record MatchSummary(
     int HomeScore,
     int AwayScore,
     bool IsDegraded,
+    LeagueRef League,
     TeamRef Home,
     TeamRef Away);
 
@@ -44,7 +54,8 @@ public sealed record MatchEventView(
     string Kind,
     Guid TeamId,
     string? Player,
-    string? Assist);
+    string? Assist,
+    string? Replaced);
 
 /// <summary>
 /// A country and what leagues it has here.

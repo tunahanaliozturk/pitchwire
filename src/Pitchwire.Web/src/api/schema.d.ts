@@ -414,6 +414,13 @@ export interface components {
              */
             statisticsStored: number;
         };
+        LeagueRef: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+            country: string;
+        };
         LeagueSummary: {
             /** Format: uuid */
             id: string;
@@ -502,6 +509,7 @@ export interface components {
             teamId: string;
             player: null | string;
             assist: null | string;
+            replaced: null | string;
         };
         MatchSummary: {
             /** Format: uuid */
@@ -518,6 +526,7 @@ export interface components {
             /** Format: int32 */
             awayScore: number;
             isDegraded: boolean;
+            league: components["schemas"]["LeagueRef"];
             home: components["schemas"]["TeamRef"];
             away: components["schemas"]["TeamRef"];
         };
