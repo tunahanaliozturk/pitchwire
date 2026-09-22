@@ -34,6 +34,9 @@ public sealed class MatchEvent
 
     public Guid? AssistPlayerId { get; set; }
 
+    /// <summary>For a substitution, the player going off. The one coming on is <see cref="PlayerId"/>.</summary>
+    public Guid? ReplacedPlayerId { get; set; }
+
     /// <summary>When the provider says it happened.</summary>
     public DateTimeOffset OccurredAt { get; set; }
 

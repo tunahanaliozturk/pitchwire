@@ -113,29 +113,79 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
     {
         var match = await db.Matches
             .AsNoTracking()
-            .Where(m => m.Id == matchId)
-            .Select(Summary)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(m => m.Id == matchId, cancellationToken);
 
         if (match is null)
         {
             return null;
         }
 
-        var timeline = await db.MatchEvents
+        var summary = await db.Matches
+            .AsNoTracking()
+            .Where(m => m.Id == matchId)
+            .Select(Summary)
+            .FirstAsync(cancellationToken);
+
+        var events = await db.MatchEvents
             .AsNoTracking()
             .Where(e => e.MatchId == matchId)
             .OrderBy(e => e.Sequence)
+            .ToListAsync(cancellationToken);
+
+        var lineup = await db.MatchLineups
+            .AsNoTracking()
+            .Where(entry => entry.MatchId == matchId)
+            .ToListAsync(cancellationToken);
+
+        var sheets = await db.MatchTeamSheets
+            .AsNoTracking()
+            .Where(sheet => sheet.MatchId == matchId)
+            .ToListAsync(cancellationToken);
+
+        // Every name the page shows, in one query. A lookup per event would be an N plus one on the
+        // busiest screen in the application.
+        var wanted = events
+            .SelectMany(e => new[] { e.PlayerId, e.AssistPlayerId, e.ReplacedPlayerId })
+            .Concat(lineup.Select(entry => (Guid?)entry.PlayerId))
+            .OfType<Guid>()
+            .Distinct()
+            .ToList();
+
+        var names = await db.Players
+            .AsNoTracking()
+            .Where(player => wanted.Contains(player.Id))
+            .ToDictionaryAsync(player => player.Id, player => player.Name, cancellationToken);
+
+        var statistics = await db.MatchStatistics
+            .AsNoTracking()
+            .Where(stats => stats.MatchId == matchId)
+            .Select(stats => new TeamStatisticsView(
+                stats.TeamId,
+                stats.AsOfMinute,
+                stats.Possession,
+                stats.Shots,
+                stats.ShotsOnTarget,
+                stats.Corners,
+                stats.Fouls,
+                stats.Offsides))
+            .ToListAsync(cancellationToken);
+
+        var timeline = events
             .Select(e => new MatchEventView(
                 e.Sequence,
                 e.Minute,
                 e.Kind.ToString(),
                 e.TeamId,
-                db.Players.Where(p => p.Id == e.PlayerId).Select(p => p.Name).FirstOrDefault(),
-                db.Players.Where(p => p.Id == e.AssistPlayerId).Select(p => p.Name).FirstOrDefault()))
-            .ToListAsync(cancellationToken);
+                e.PlayerId is { } player && names.TryGetValue(player, out var scorer) ? scorer : null,
+                e.AssistPlayerId is { } helper && names.TryGetValue(helper, out var assist) ? assist : null,
+                e.ReplacedPlayerId is { } off && names.TryGetValue(off, out var leaving) ? leaving : null))
+            .ToList();
 
-        return new MatchDetail(match, timeline);
+        return new MatchDetail(
+            summary,
+            timeline,
+            MatchSheetAssembly.Build(match, sheets, lineup, events, names),
+            statistics);
     }
 
     /// <summary>
@@ -160,7 +210,8 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
                 e.Kind.ToString(),
                 e.TeamId,
                 db.Players.Where(p => p.Id == e.PlayerId).Select(p => p.Name).FirstOrDefault(),
-                db.Players.Where(p => p.Id == e.AssistPlayerId).Select(p => p.Name).FirstOrDefault()))
+                db.Players.Where(p => p.Id == e.AssistPlayerId).Select(p => p.Name).FirstOrDefault(),
+                db.Players.Where(p => p.Id == e.ReplacedPlayerId).Select(p => p.Name).FirstOrDefault()))
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<FormEntry>> FormAsync(
@@ -270,6 +321,11 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
             m.HomeScore,
             m.AwayScore,
             m.IsDegraded,
+            new LeagueRef(
+                m.Season!.League!.Id,
+                m.Season.League.Name,
+                m.Season.League.Slug,
+                m.Season.League.Country!.Name),
             new TeamRef(m.HomeTeam!.Id, m.HomeTeam.Name, m.HomeTeam.ShortName, m.HomeTeam.Slug),
             new TeamRef(m.AwayTeam!.Id, m.AwayTeam.Name, m.AwayTeam.ShortName, m.AwayTeam.Slug));
 }

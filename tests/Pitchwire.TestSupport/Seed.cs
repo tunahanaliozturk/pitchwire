@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Pitchwire.Contracts;
 using Pitchwire.Domain;
 using Pitchwire.Infrastructure.Persistence;
@@ -13,7 +14,17 @@ public static class Seed
     {
         ArgumentNullException.ThrowIfNull(db);
 
-        var league = new League { Id = Guid.NewGuid(), Name = "Test League", Country = "Testland", Slug = $"test-league-{Guid.NewGuid():N}" };
+        // One test country per database, found or made. ZZ is a code ISO leaves for private use, so it
+        // can never collide with a real one the catalogue seeds.
+        var country = await db.Countries.FirstOrDefaultAsync(c => c.Code == "ZZ", cancellationToken);
+
+        if (country is null)
+        {
+            country = new Country { Id = Guid.NewGuid(), Name = "Testland", Code = "ZZ", Slug = "testland" };
+            db.Countries.Add(country);
+        }
+
+        var league = new League { Id = Guid.NewGuid(), Name = "Test League", CountryId = country.Id, Slug = $"test-league-{Guid.NewGuid():N}" };
         var season = new Season { Id = Guid.NewGuid(), LeagueId = league.Id, Year = 2026 };
         var home = new Team { Id = Guid.NewGuid(), Name = "Home United", ShortName = "HOM", Slug = $"home-{Guid.NewGuid():N}" };
         var away = new Team { Id = Guid.NewGuid(), Name = "Away City", ShortName = "AWY", Slug = $"away-{Guid.NewGuid():N}" };

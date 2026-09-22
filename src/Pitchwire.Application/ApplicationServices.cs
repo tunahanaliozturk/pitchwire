@@ -25,6 +25,7 @@ public static class ApplicationServices
         services.AddSingleton<GapRepairBacklog>();
 
         services.AddScoped<EventIngestor>();
+        services.AddScoped<SnapshotIngestor>();
         services.AddScoped<SeasonProjector>();
         services.AddScoped<DeviceRegistry>();
         services.AddScoped<NotificationFanout>();

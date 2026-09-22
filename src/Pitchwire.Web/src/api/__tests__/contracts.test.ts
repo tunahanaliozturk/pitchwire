@@ -17,6 +17,7 @@ const valid = {
     homeScore: 1,
     awayScore: 0,
     isDegraded: false,
+    league: { id: "l", name: "Pitchwire Premier", slug: "pitchwire-premier", country: "England" },
     home: { id: "h", name: "Home", shortName: "HOM", slug: "home" },
     away: { id: "a", name: "Away", shortName: "AWY", slug: "away" },
 };

@@ -31,6 +31,7 @@ that were rolled back, or miss goals that were saved.
 ### In scope
 
 * Live match view with minute by minute events, updated without a page refresh.
+* Several leagues across several countries, chosen by country and then by league.
 * Match detail with the event timeline, lineups, substitutions and match statistics.
 * Fixtures and results, by league, by round and by team, across multiple leagues and past seasons.
 * League tables, top scorers and recent form, all derived from match events.
@@ -185,7 +186,48 @@ application is accepted, and a protocol relative one such as `//elsewhere` is re
 absolute URL. A notification that can send somebody anywhere is a notification worth sending for the
 wrong reasons.
 
+### Squads, statistics and ratings
+
+**FR-29** Leagues are grouped by country, and a country's leagues are listed top flight first. The
+countries are real and every club, league and player is invented: real clubs would put somebody else's
+trademarks in a demo, and invented ones in a real country let a reader see names that look like home
+without anybody's badge on them.
+
+**FR-30** A match carries both team sheets, with a formation, a starting eleven and a bench. Team
+sheets are snapshots rather than events, so they have no sequence: a later one replaces the earlier
+one entirely, because a player dropped from a corrected sheet has to disappear rather than linger.
+
+**FR-31** A match carries per side statistics: possession, shots, shots on target, corners, fouls and
+offsides. They are cumulative snapshots, so only the newest is kept and one that arrives from an
+earlier minute is ignored. Writing it would walk the shot count backwards, which is the statistics
+version of a score going down.
+
+**FR-32** Every player named on a sheet gets the minutes they played, worked out from the
+substitutions and dismissals in the event log rather than reported separately. A reported number could
+disagree with the log, and then one of the two would be wrong with nothing to say which.
+
+**FR-33** A player who was on the pitch long enough gets a match rating derived from the log: goals,
+penalties, own goals, assists, cards, the result, and for a goalkeeper or defender what got past them.
+It is a model and a deliberately simple one, not a scout's opinion, and every point in it comes from
+something recorded. A player on for less than twenty minutes is not rated at all, because a number for
+three minutes of stoppage time would claim to know something the log does not.
+
+**FR-34** Every league in the catalogue plays, not only the first one. A country and league picker in
+front of five competitions that never kick off is a menu of empty rooms, and the grouping on the live
+board only earns its keep when more than one league is playing at once.
+
 ### Frontend
+
+**FR-35** Team sheets are drawn on a pitch as well as listed, with the home side at the bottom. The
+rows come from the formation string rather than from the recorded positions, so a sheet that reads
+3-5-2 looks like 3-5-2 even where the wing back in the middle band is listed as a defender. Anybody
+the formation does not account for is still placed: a corrected sheet with twelve names must not
+quietly lose the twelfth.
+
+**FR-36** The timeline reads as a match report rather than as a log. Periods are named at the ground's
+own words, so "Period ended 48'" followed by "Period started 46'" becomes half time and second half
+with no minute to argue with. A substitution names both players, and events are attributed to a team
+by its short name rather than as home or away.
 
 **FR-24** The application is installable and works as a PWA. The service worker handles push and
 notification clicks.
@@ -199,6 +241,10 @@ return it on close.
 **FR-27** Scores render with tabular figures so a 0 becoming a 1 does not shift the row.
 
 **FR-28** Motion, including the goal highlight, respects `prefers-reduced-motion`.
+
+**FR-37** Every link in the navigation resolves to a screen of its own. A link whose route was never
+registered still renders and still looks enabled, and nothing in a type checker or a linter notices,
+so the links are read out of the shell and put to the router in a test.
 
 ## 5. Data model
 
@@ -389,6 +435,8 @@ Each one states the alternative that lost and what was given up.
 | 0009 | Anonymous device identity, and why an identity provider was not used here |
 | 0010 | Why no component library is in the bundle yet, and why it will be PrimeVue 4.5.5 rather than 5 |
 | 0011 | A separate wire model, translated at the boundary, rather than one enum shared with the provider |
+| 0012 | Player ratings derived from the event log, and why they are a model rather than an opinion |
+| 0013 | Team sheets and statistics as snapshots in the same signed batch, with their own ordering rule |
 
 ## 11. Acceptance criteria
 

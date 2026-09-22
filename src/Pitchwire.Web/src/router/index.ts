@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 
 /**
- * Four screens, each one lazily loaded.
+ * Six screens, each one lazily loaded.
  *
  * A single bundle means somebody opening one live match downloads the league table, the fixture list
  * and everything else. Route level splitting is the cheapest performance decision available and it
@@ -25,6 +25,18 @@ const routes: RouteRecordRaw[] = [
         name: "table",
         component: () => import("@/views/TableView.vue"),
         meta: { title: "Table" },
+    },
+    {
+        path: "/scorers",
+        name: "scorers",
+        component: () => import("@/views/ScorersView.vue"),
+        meta: { title: "Scorers" },
+    },
+    {
+        path: "/settings",
+        name: "settings",
+        component: () => import("@/views/SettingsView.vue"),
+        meta: { title: "Settings" },
     },
     {
         path: "/matches/:matchId",

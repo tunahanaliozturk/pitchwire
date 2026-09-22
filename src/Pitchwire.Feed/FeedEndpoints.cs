@@ -15,7 +15,7 @@ internal static class FeedEndpoints
 
         // What a provider publishes so a consumer can set up its fixture list. Both sides derive the
         // same identifiers from the catalogue, so this is here for a reader rather than for the API.
-        routes.MapGet("/fixtures", () => Results.Ok(Catalogue.Fixtures.Select(fixture => new
+        routes.MapGet("/fixtures", () => Results.Ok(Catalogue.AllFixtures.Select(fixture => new
         {
             fixture.Id,
             fixture.Round,

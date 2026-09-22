@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { computed, onMounted, reactive, watch } from "vue";
 
 import { api } from "@/api/client";
+import LeaguePicker from "@/components/LeaguePicker.vue";
 import { useSeason } from "@/composables/useSeason";
 import { useDeviceStore } from "@/stores/device";
 
@@ -79,6 +80,7 @@ const toggleTeam = async (teamId: string, event: Event) => {
 
 <template>
     <section>
+        <LeaguePicker />
         <h1>Settings</h1>
 
         <section class="block" aria-labelledby="push-heading">

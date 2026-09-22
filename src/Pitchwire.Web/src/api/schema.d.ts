@@ -172,6 +172,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Countries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/countries/{countrySlug}/leagues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Leagues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seasons": {
         parameters: {
             query?: never;
@@ -320,6 +352,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CountrySummary: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            code: string;
+            slug: string;
+            /** Format: int32 */
+            leagues: number;
+        };
         DeviceSettings: {
             /** Format: uuid */
             id: string;
@@ -352,6 +393,8 @@ export interface components {
         };
         IngestRequest: {
             events: components["schemas"]["MatchEventPayload"][];
+            lineups?: null | components["schemas"]["LineupPayload"][];
+            statistics?: null | components["schemas"]["StatisticsPayload"][];
         };
         IngestResponse: {
             /** Format: int32 */
@@ -360,10 +403,80 @@ export interface components {
             duplicate: number;
             /** Format: int32 */
             rejected: number;
+            /**
+             * Format: int32
+             * @default 0
+             */
+            lineupsStored: number;
+            /**
+             * Format: int32
+             * @default 0
+             */
+            statisticsStored: number;
         };
+        LeagueRef: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+            country: string;
+        };
+        LeagueSummary: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+            /** Format: int32 */
+            tier: number;
+            /** Format: uuid */
+            countryId: string;
+            country: string;
+            /** Format: uuid */
+            currentSeasonId: null | string;
+        };
+        LineupPayload: {
+            /** Format: uuid */
+            matchId: string;
+            /** Format: uuid */
+            teamId: string;
+            formation: string;
+            players: components["schemas"]["LineupPlayerPayload"][];
+        };
+        LineupPlayerPayload: {
+            /** Format: uuid */
+            playerId: string;
+            /** Format: int32 */
+            shirtNumber: number;
+            position: components["schemas"]["LineupPosition"];
+            starter: boolean;
+        };
+        LineupPlayerView: {
+            /** Format: uuid */
+            playerId: string;
+            player: string;
+            /** Format: int32 */
+            shirtNumber: number;
+            position: string;
+            starter: boolean;
+            /** Format: int32 */
+            minutesPlayed: number;
+            /** Format: int32 */
+            goals: number;
+            /** Format: int32 */
+            assists: number;
+            /** Format: int32 */
+            yellowCards: number;
+            /** Format: int32 */
+            redCards: number;
+            /** Format: double */
+            rating: null | number;
+        };
+        LineupPosition: number;
         MatchDetail: {
             match: components["schemas"]["MatchSummary"];
             timeline: components["schemas"]["MatchEventView"][];
+            lineups: components["schemas"]["TeamSheetView"][];
+            statistics: components["schemas"]["TeamStatisticsView"][];
         };
         MatchEventKind: number;
         MatchEventPayload: {
@@ -383,6 +496,8 @@ export interface components {
             assistPlayerId: null | string;
             /** Format: date-time */
             occurredAt: string;
+            /** Format: uuid */
+            replacedPlayerId?: null | string;
         };
         MatchEventView: {
             /** Format: int32 */
@@ -394,6 +509,7 @@ export interface components {
             teamId: string;
             player: null | string;
             assist: null | string;
+            replaced: null | string;
         };
         MatchSummary: {
             /** Format: uuid */
@@ -410,6 +526,7 @@ export interface components {
             /** Format: int32 */
             awayScore: number;
             isDegraded: boolean;
+            league: components["schemas"]["LeagueRef"];
             home: components["schemas"]["TeamRef"];
             away: components["schemas"]["TeamRef"];
         };
@@ -451,6 +568,26 @@ export interface components {
             league: string;
             leagueSlug: string;
         };
+        StatisticsPayload: {
+            /** Format: uuid */
+            matchId: string;
+            /** Format: uuid */
+            teamId: string;
+            /** Format: int32 */
+            asOfMinute: number;
+            /** Format: int32 */
+            possession: number;
+            /** Format: int32 */
+            shots: number;
+            /** Format: int32 */
+            shotsOnTarget: number;
+            /** Format: int32 */
+            corners: number;
+            /** Format: int32 */
+            fouls: number;
+            /** Format: int32 */
+            offsides: number;
+        };
         SubscriptionKeys: {
             p256dh: string;
             auth: string;
@@ -486,6 +623,30 @@ export interface components {
             name: string;
             shortName: string;
             slug: string;
+        };
+        TeamSheetView: {
+            /** Format: uuid */
+            teamId: string;
+            formation: string;
+            players: components["schemas"]["LineupPlayerView"][];
+        };
+        TeamStatisticsView: {
+            /** Format: uuid */
+            teamId: string;
+            /** Format: int32 */
+            asOfMinute: number;
+            /** Format: int32 */
+            possession: number;
+            /** Format: int32 */
+            shots: number;
+            /** Format: int32 */
+            shotsOnTarget: number;
+            /** Format: int32 */
+            corners: number;
+            /** Format: int32 */
+            fouls: number;
+            /** Format: int32 */
+            offsides: number;
         };
     };
     responses: never;
@@ -646,9 +807,53 @@ export interface operations {
             };
         };
     };
-    Seasons: {
+    Countries: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountrySummary"][];
+                };
+            };
+        };
+    };
+    Leagues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                countrySlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeagueSummary"][];
+                };
+            };
+        };
+    };
+    Seasons: {
+        parameters: {
+            query?: {
+                leagueId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

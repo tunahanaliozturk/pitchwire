@@ -25,7 +25,7 @@ public sealed class FeedLedgerTests
         // received the rest of the match, including the final whistle, and finished a fixture in half
         // the time it should have taken. Events are known as they happen, and not before.
         var ledger = new FeedLedger();
-        var script = MatchScript.For(Fixture, seed: 42);
+        var script = MatchScript.For(Fixture, seed: 42).Events;
 
         ledger.Note(Fixture.Id, script[0]);
         ledger.Note(Fixture.Id, script[1]);
@@ -40,7 +40,7 @@ public sealed class FeedLedgerTests
         // This is what makes a gap recoverable. An event the provider failed to deliver has to stay
         // in its own record, or the consumer asking for it would be told it never existed.
         var ledger = new FeedLedger();
-        var script = MatchScript.For(Fixture, seed: 42);
+        var script = MatchScript.For(Fixture, seed: 42).Events;
 
         ledger.Note(Fixture.Id, script[0]);
         ledger.Note(Fixture.Id, script[1]);

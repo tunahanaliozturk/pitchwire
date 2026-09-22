@@ -1,7 +1,9 @@
 import type { z } from "zod";
 
 import {
+    countrySummary,
     deviceSettings,
+    leagueSummary,
     matchDetail,
     matchEventView,
     pageOfMatchSummary,
@@ -9,7 +11,9 @@ import {
     scorerRow,
     seasonSummary,
     tableRow,
+    type CountrySummary,
     type DeviceSettings,
+    type LeagueSummary,
     type MatchDetail,
     type MatchEventView,
     type PageOfMatchSummary,
@@ -99,7 +103,16 @@ async function read<T>(path: string, schema: z.ZodType<T>): Promise<T> {
 }
 
 export const api = {
-    seasons: (): Promise<SeasonSummary[]> => read("/seasons", seasonSummary.array()),
+    countries: (): Promise<CountrySummary[]> => read("/countries", countrySummary.array()),
+
+    leagues: (countrySlug: string): Promise<LeagueSummary[]> =>
+        read(`/countries/${countrySlug}/leagues`, leagueSummary.array()),
+
+    seasons: (leagueId?: string): Promise<SeasonSummary[]> =>
+        read(
+            leagueId === undefined ? "/seasons" : `/seasons?leagueId=${leagueId}`,
+            seasonSummary.array(),
+        ),
 
     live: (top = 50): Promise<PageOfMatchSummary> =>
         read(`/matches/live?$top=${top}`, pageOfMatchSummary),

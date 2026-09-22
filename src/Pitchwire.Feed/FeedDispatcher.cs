@@ -32,7 +32,15 @@ public sealed partial class FeedDispatcher(
         ArgumentNullException.ThrowIfNull(fixture);
 
         var settings = options.Value;
-        var script = MatchScript.For(fixture, settings.Seed);
+        var plan = MatchScript.For(fixture, settings.Seed);
+        var script = plan.Events;
+
+        // The team sheets go out before the first whistle, the way a provider publishes them, and
+        // again at half time. They are snapshots, so a second copy costs nothing and a lost first one
+        // needs nobody to ask for it.
+        var pendingLineups = new List<LineupPayload>(plan.Lineups);
+        var pendingStatistics = new List<StatisticsPayload>();
+        var nextSnapshot = 0;
 
         var rolls = new Rolls(settings.Seed ^ (ulong)fixture.Id.GetHashCode() ^ 0xD1B54A32D192ED03);
         var pending = new List<MatchEventPayload>();
@@ -47,6 +55,19 @@ public sealed partial class FeedDispatcher(
         {
             await WaitForMinuteAsync(@event.Minute - previousMinute, settings, cancellationToken);
             previousMinute = @event.Minute;
+
+            // Statistics are cumulative, so the ones whose minute has passed travel with whatever
+            // goes next. A snapshot nobody delivers is replaced by the following one.
+            while (nextSnapshot < plan.Statistics.Count && plan.Statistics[nextSnapshot].AsOfMinute <= @event.Minute)
+            {
+                pendingStatistics.Add(plan.Statistics[nextSnapshot]);
+                nextSnapshot++;
+            }
+
+            if (@event.Kind == MatchEventKind.PeriodStart && @event.Minute > 0)
+            {
+                pendingLineups.AddRange(plan.Lineups);
+            }
 
             // Noted as it happens, before the decision to send it. The provider knows about a goal it
             // then failed to deliver, and it must not know about one that has not been scored yet.
@@ -91,16 +112,19 @@ public sealed partial class FeedDispatcher(
             }
 
             delivered += pending.Count;
-            await SendAsync(pending, settings, cancellationToken);
+            await SendAsync(pending, pendingLineups, pendingStatistics, settings, cancellationToken);
             pending.Clear();
+            pendingLineups.Clear();
+            pendingStatistics.Clear();
         }
 
         pending.AddRange(held);
+        pendingStatistics.AddRange(plan.Statistics.Skip(nextSnapshot));
 
-        if (pending.Count > 0)
+        if (pending.Count > 0 || pendingStatistics.Count > 0 || pendingLineups.Count > 0)
         {
             delivered += pending.Count;
-            await SendAsync(pending, settings, cancellationToken);
+            await SendAsync(pending, pendingLineups, pendingStatistics, settings, cancellationToken);
         }
 
         return new FeedRunStatistics(delivered, dropped, duplicated, reordered);
@@ -108,16 +132,18 @@ public sealed partial class FeedDispatcher(
 
     private async Task SendAsync(
         List<MatchEventPayload> batch,
+        List<LineupPayload> lineups,
+        List<StatisticsPayload> statistics,
         FeedOptions settings,
         CancellationToken cancellationToken)
     {
-        if (batch.Count == 0)
+        if (batch.Count == 0 && lineups.Count == 0 && statistics.Count == 0)
         {
             return;
         }
 
         var stamp = clock.GetUtcNow();
-        var body = JsonSerializer.SerializeToUtf8Bytes(new IngestRequest([.. batch]), Json);
+        var body = JsonSerializer.SerializeToUtf8Bytes(new IngestRequest([.. batch], [.. lineups], [.. statistics]), Json);
 
         using var content = new ByteArrayContent(body);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");

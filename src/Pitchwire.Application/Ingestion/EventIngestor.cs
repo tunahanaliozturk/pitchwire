@@ -314,6 +314,7 @@ public sealed class EventIngestor(
         TeamId = payload.TeamId,
         PlayerId = payload.PlayerId,
         AssistPlayerId = payload.AssistPlayerId,
+        ReplacedPlayerId = payload.ReplacedPlayerId,
         OccurredAt = payload.OccurredAt,
         ReceivedAt = clock.GetUtcNow(),
     };

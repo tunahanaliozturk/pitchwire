@@ -18,7 +18,9 @@ internal sealed partial class SeasonSimulationService(
 
         await WaitForConsumerAsync(stoppingToken);
 
-        var rounds = Catalogue.Fixtures.GroupBy(f => f.Round).OrderBy(g => g.Key);
+        // Every league, not just the one at the top of the list. A country picker in front of five
+        // competitions that never play is a menu of empty rooms.
+        var rounds = Catalogue.AllFixtures.GroupBy(f => f.Round).OrderBy(g => g.Key);
 
         foreach (var round in rounds)
         {

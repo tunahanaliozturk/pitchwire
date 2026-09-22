@@ -13,6 +13,7 @@ const match: MatchSummary = {
     homeScore: 0,
     awayScore: 0,
     isDegraded: false,
+    league: { id: "l", name: "Pitchwire Premier", slug: "pitchwire-premier", country: "England" },
     home: { id: "h", name: "Harbour Rovers", shortName: "HAR", slug: "harbour-rovers" },
     away: { id: "a", name: "Kingsway United", shortName: "KIN", slug: "kingsway-united" },
 };

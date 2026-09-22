@@ -25,6 +25,13 @@ export const seasonSummary = z.object({
     leagueSlug: z.string(),
 });
 
+export const leagueRef = z.object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    country: z.string(),
+});
+
 export const matchSummary = z.object({
     id: z.string(),
     round: z.number(),
@@ -34,6 +41,7 @@ export const matchSummary = z.object({
     homeScore: z.number(),
     awayScore: z.number(),
     isDegraded: z.boolean(),
+    league: leagueRef,
     home: teamRef,
     away: teamRef,
 });
@@ -45,11 +53,64 @@ export const matchEventView = z.object({
     teamId: z.string(),
     player: z.string().nullable(),
     assist: z.string().nullable(),
+    replaced: z.string().nullable(),
+});
+
+export const lineupPlayerView = z.object({
+    playerId: z.string(),
+    player: z.string(),
+    shirtNumber: z.number(),
+    position: z.string(),
+    starter: z.boolean(),
+    minutesPlayed: z.number(),
+    goals: z.number(),
+    assists: z.number(),
+    yellowCards: z.number(),
+    redCards: z.number(),
+    // Absent for anybody who played too little to judge, which is a different thing from a zero.
+    rating: z.number().nullable(),
+});
+
+export const teamSheetView = z.object({
+    teamId: z.string(),
+    formation: z.string(),
+    players: z.array(lineupPlayerView),
+});
+
+export const teamStatisticsView = z.object({
+    teamId: z.string(),
+    asOfMinute: z.number(),
+    possession: z.number(),
+    shots: z.number(),
+    shotsOnTarget: z.number(),
+    corners: z.number(),
+    fouls: z.number(),
+    offsides: z.number(),
 });
 
 export const matchDetail = z.object({
     match: matchSummary,
     timeline: z.array(matchEventView),
+    lineups: z.array(teamSheetView),
+    statistics: z.array(teamStatisticsView),
+});
+
+export const countrySummary = z.object({
+    id: z.string(),
+    name: z.string(),
+    code: z.string(),
+    slug: z.string(),
+    leagues: z.number(),
+});
+
+export const leagueSummary = z.object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    tier: z.number(),
+    countryId: z.string(),
+    country: z.string(),
+    currentSeasonId: z.string().nullable(),
 });
 
 export const pageOfMatchSummary = z.object({
@@ -102,9 +163,15 @@ export const deviceSettings = z.object({
 
 export const pushKey = z.object({ publicKey: z.string() });
 
+export type CountrySummary = z.infer<typeof countrySummary>;
+export type LeagueSummary = z.infer<typeof leagueSummary>;
+export type LineupPlayerView = z.infer<typeof lineupPlayerView>;
+export type TeamSheetView = z.infer<typeof teamSheetView>;
+export type TeamStatisticsView = z.infer<typeof teamStatisticsView>;
 export type DeviceSettings = z.infer<typeof deviceSettings>;
 export type PushKey = z.infer<typeof pushKey>;
 export type SeasonSummary = z.infer<typeof seasonSummary>;
+export type LeagueRef = z.infer<typeof leagueRef>;
 export type TeamRef = z.infer<typeof teamRef>;
 export type MatchSummary = z.infer<typeof matchSummary>;
 export type MatchEventView = z.infer<typeof matchEventView>;
@@ -130,9 +197,15 @@ export type ContractChecks = [
     Agrees<Equal<DeviceSettings, components["schemas"]["DeviceSettings"]>>,
     Agrees<Equal<PushKey, components["schemas"]["PushKey"]>>,
     Agrees<Equal<SeasonSummary, components["schemas"]["SeasonSummary"]>>,
+    Agrees<Equal<LeagueRef, components["schemas"]["LeagueRef"]>>,
     Agrees<Equal<TeamRef, components["schemas"]["TeamRef"]>>,
     Agrees<Equal<MatchSummary, components["schemas"]["MatchSummary"]>>,
     Agrees<Equal<MatchEventView, components["schemas"]["MatchEventView"]>>,
+    Agrees<Equal<CountrySummary, components["schemas"]["CountrySummary"]>>,
+    Agrees<Equal<LeagueSummary, components["schemas"]["LeagueSummary"]>>,
+    Agrees<Equal<LineupPlayerView, components["schemas"]["LineupPlayerView"]>>,
+    Agrees<Equal<TeamSheetView, components["schemas"]["TeamSheetView"]>>,
+    Agrees<Equal<TeamStatisticsView, components["schemas"]["TeamStatisticsView"]>>,
     Agrees<Equal<MatchDetail, components["schemas"]["MatchDetail"]>>,
     Agrees<Equal<PageOfMatchSummary, components["schemas"]["PageOfMatchSummary"]>>,
     Agrees<Equal<TableRow, components["schemas"]["TableRow"]>>,
