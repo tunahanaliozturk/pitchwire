@@ -4,6 +4,9 @@ Notable changes, newest first. Dates are the day the work landed on `main`.
 
 ## Unreleased
 
+- The local stack now binds its ports to loopback. The browser-facing proxy adds CSP and transport,
+  MIME, frame and referrer headers, and applies a per-client-IP `/api` rate limit that ignores
+  caller-supplied forwarding headers.
 - A device can renew its own push subscription, but another device can no longer claim its endpoint
   and redirect notifications. Conflicts answer 409 without changing the original subscription.
 - Chromium now exercises competition switching, combined match filters and all match-detail tabs

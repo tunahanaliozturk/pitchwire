@@ -15,6 +15,7 @@ RUN printf 'map $http_upgrade $connection_upgrade {\n  default upgrade;\n  "" cl
     > /etc/nginx/conf.d/upgrade.conf
 
 COPY src/Pitchwire.Web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY src/Pitchwire.Web/security-headers.conf /etc/nginx/security-headers.conf
 COPY --from=build /source/dist /usr/share/nginx/html
 
 EXPOSE 8080

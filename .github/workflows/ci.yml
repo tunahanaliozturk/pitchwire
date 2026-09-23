@@ -246,6 +246,25 @@ jobs:
           # The key a browser needs before it can subscribe at all.
           curl -fsS http://localhost:5082/api/push/public-key | grep -q publicKey
 
+      - name: Assert edge security headers and per-IP throttling
+        run: |
+          for path in / /api/push/public-key /assets/missing.js; do
+            headers=$(curl -sS -D - -o /dev/null "http://localhost:5082$path")
+            if [ "$path" = /assets/missing.js ]; then
+              echo "$headers" | grep -q '^HTTP/1.1 404'
+            else
+              echo "$headers" | grep -q '^HTTP/1.1 200'
+            fi
+            echo "$headers" | grep -qi "^content-security-policy:.*script-src 'self'"
+            echo "$headers" | grep -qi '^strict-transport-security: max-age=31536000'
+            echo "$headers" | grep -qi '^x-content-type-options: nosniff'
+            echo "$headers" | grep -qi '^x-frame-options: DENY'
+          done
+          # Inventing a different X-Forwarded-For for every request must not escape the limit.
+          codes=$(seq 1 80 | xargs -P 16 -I{} curl -s -o /dev/null -w '%{http_code}\n' \
+            -H 'X-Forwarded-For: 192.0.2.{}' http://localhost:5082/api/push/public-key)
+          echo "$codes" | grep -qx 429
+
       - name: Show the table so far
         if: always()
         run: docker compose exec -T postgres psql -U pitchwire -d pitchwire -c "select t.name, s.played, s.won, s.drawn, s.lost, s.points from standings s join teams t on t.id = s.team_id order by s.points desc, s.goals_for desc limit 6"
