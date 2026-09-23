@@ -10,6 +10,7 @@ import {
     pushKey,
     scorerRow,
     seasonSummary,
+    seasonDetail,
     tableRow,
     type CountrySummary,
     type DeviceSettings,
@@ -19,6 +20,7 @@ import {
     type PageOfMatchSummary,
     type ScorerRow,
     type SeasonSummary,
+    type SeasonDetail,
     type TableRow,
 } from "./contracts";
 
@@ -30,6 +32,20 @@ import {
  * saying which endpoint disagreed is worth more than a stack trace in a component.
  */
 const base = "/api";
+
+export type MatchFilters = { round?: number; teamId?: string };
+
+const matchListPath = (
+    kind: "fixtures" | "results",
+    seasonId: string,
+    filters: MatchFilters,
+    top: number,
+) => {
+    const params = new URLSearchParams({ $top: String(top) });
+    if (filters.round !== undefined) params.set("round", String(filters.round));
+    if (filters.teamId !== undefined) params.set("teamId", filters.teamId);
+    return `/seasons/${seasonId}/${kind}?${params}`;
+};
 
 export class ApiError extends Error {
     constructor(
@@ -114,20 +130,27 @@ export const api = {
             seasonSummary.array(),
         ),
 
+    season: (seasonId: string): Promise<SeasonDetail> => read(`/seasons/${seasonId}`, seasonDetail),
+
     live: (top = 50): Promise<PageOfMatchSummary> =>
         read(`/matches/live?$top=${top}`, pageOfMatchSummary),
 
     /** Follows a nextLink exactly as it was given, which is the only supported way to page. */
     page: (nextLink: string): Promise<PageOfMatchSummary> => read(nextLink, pageOfMatchSummary),
 
-    fixtures: (seasonId: string, round?: number, top = 50): Promise<PageOfMatchSummary> =>
-        read(
-            `/seasons/${seasonId}/fixtures?$top=${top}${round === undefined ? "" : `&round=${round}`}`,
-            pageOfMatchSummary,
-        ),
+    fixtures: (
+        seasonId: string,
+        filters: MatchFilters = {},
+        top = 50,
+    ): Promise<PageOfMatchSummary> =>
+        read(matchListPath("fixtures", seasonId, filters, top), pageOfMatchSummary),
 
-    results: (seasonId: string, top = 20): Promise<PageOfMatchSummary> =>
-        read(`/seasons/${seasonId}/results?$top=${top}`, pageOfMatchSummary),
+    results: (
+        seasonId: string,
+        filters: MatchFilters = {},
+        top = 20,
+    ): Promise<PageOfMatchSummary> =>
+        read(matchListPath("results", seasonId, filters, top), pageOfMatchSummary),
 
     match: (matchId: string): Promise<MatchDetail> => read(`/matches/${matchId}`, matchDetail),
 

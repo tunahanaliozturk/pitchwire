@@ -250,6 +250,10 @@ so the links are read out of the shell and put to the router in a test.
 reader's local date, newest first, and additional pages follow the API's `nextLink` without decoding it
 in the browser. An empty season says that no results have been played yet.
 
+**FR-39** Fixtures and results can each be narrowed to a round, a team, or both. The season resource
+lists the available choices from the stored schedule. A continuation link keeps every filter, and a
+cached page for one selection cannot be returned for another.
+
 ## 5. Data model
 
 PostgreSQL with EF Core 10. Migrations live in the repository and are applied on startup in development

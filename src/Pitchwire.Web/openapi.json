@@ -304,6 +304,40 @@
         }
       }
     },
+    "/seasons/{seasonId}": {
+      "get": {
+        "tags": [
+          "ReadEndpoints"
+        ],
+        "operationId": "SeasonDetail",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/matches/live": {
       "get": {
         "tags": [
@@ -442,6 +476,14 @@
             }
           },
           {
+            "name": "teamId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
             "name": "$top",
             "in": "query",
             "schema": {
@@ -482,6 +524,22 @@
             "name": "seasonId",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "round",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "teamId",
+            "in": "query",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -1338,6 +1396,42 @@
           "assists": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "SeasonDetail": {
+        "required": [
+          "id",
+          "year",
+          "league",
+          "teams",
+          "rounds"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "league": {
+            "$ref": "#/components/schemas/LeagueRef"
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeamRef"
+            }
+          },
+          "rounds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         }
       },

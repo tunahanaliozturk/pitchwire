@@ -42,12 +42,22 @@ GET {{api}}/seasons
 @seasonId = 00000000-0000-0000-0000-000000000000
 GET {{api}}/seasons/{{seasonId}}/fixtures?$top=5
 
+### One season: its participating teams and the rounds actually on its schedule
+GET {{api}}/seasons/{{seasonId}}
+
+### Fixtures for one team in one round
+@teamId = 00000000-0000-0000-0000-000000000000
+GET {{api}}/seasons/{{seasonId}}/fixtures?round=1&teamId={{teamId}}&$top=5
+
 ### The next page
 # Paste the token from the `nextLink` above.
 GET {{api}}/seasons/{{seasonId}}/fixtures?$top=5&$skiptoken=
 
 ### Results, newest first
 GET {{api}}/seasons/{{seasonId}}/results?$top=5
+
+### Finished matches for the same team and round
+GET {{api}}/seasons/{{seasonId}}/results?round=1&teamId={{teamId}}&$top=5
 
 ### The league table
 GET {{api}}/seasons/{{seasonId}}/table
@@ -56,7 +66,6 @@ GET {{api}}/seasons/{{seasonId}}/table
 GET {{api}}/seasons/{{seasonId}}/scorers?$top=10
 
 ### A team's recent form
-@teamId = 00000000-0000-0000-0000-000000000000
 GET {{api}}/teams/{{teamId}}/form?seasonId={{seasonId}}&count=5
 
 ### This browser's identity

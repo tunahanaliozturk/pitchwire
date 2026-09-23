@@ -10,6 +10,12 @@ namespace Pitchwire.Application.Reads;
 public sealed record SeasonSummary(Guid Id, int Year, Guid LeagueId, string League, string LeagueSlug);
 
 /// <summary>
+/// The stable choices within a season. Its rounds come from scheduled matches, not an assumption
+/// about how many times its teams play each other.
+/// </summary>
+public sealed record SeasonDetail(Guid Id, int Year, LeagueRef League, IReadOnlyList<TeamRef> Teams, IReadOnlyList<int> Rounds);
+
+/// <summary>
 /// A team as every other read model refers to it.
 /// </summary>
 /// <remarks>
