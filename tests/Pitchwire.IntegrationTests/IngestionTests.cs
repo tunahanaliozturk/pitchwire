@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Pitchwire.Contracts;
 using Pitchwire.Domain;
@@ -114,6 +115,38 @@ public sealed class IngestionTests(PostgresFixture postgres) : IClassFixture<Pos
         (await CountEventsAsync(match.Id)).ShouldBe(0);
     }
 
+    [Theory]
+    [InlineData(1024 * 1024, HttpStatusCode.Accepted)]
+    [InlineData(1024 * 1024 + 1, HttpStatusCode.RequestEntityTooLarge)]
+    public async Task A_body_without_content_length_is_bounded_before_its_signature_is_checked(
+        int bytes,
+        HttpStatusCode expected)
+    {
+        await using var app = new PitchwireApiFactory(postgres.ConnectionString);
+        using var client = app.CreateClient();
+
+        // JSON permits trailing whitespace. The two bodies differ by only one byte, and both have a
+        // valid signature. The content deliberately cannot tell HttpClient its length in advance.
+        var body = new byte[bytes];
+        var json = Encoding.UTF8.GetBytes("""{"events":[]}""");
+        json.CopyTo(body, 0);
+        Array.Fill(body, (byte)' ', json.Length, bytes - json.Length);
+
+        var stamp = DateTimeOffset.UtcNow;
+        using var content = new UnknownLengthContent(body);
+        content.Headers.ContentType = new("application/json");
+        content.Headers.ContentLength.ShouldBeNull();
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/ingest/events") { Content = content };
+        request.Headers.TransferEncodingChunked = true;
+        request.Headers.Add("X-Pitchwire-Signature", RequestSigner.Sign(PitchwireApiFactory.IngestSecret, stamp, body));
+        request.Headers.Add("X-Pitchwire-Timestamp", stamp.ToStamp());
+
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(expected);
+    }
+
     [Fact]
     public async Task Events_for_two_matches_in_one_batch_both_land()
     {
@@ -164,5 +197,17 @@ public sealed class IngestionTests(PostgresFixture postgres) : IClassFixture<Pos
     {
         await using var db = postgres.CreateContext();
         return await db.MatchEvents.CountAsync(e => e.MatchId == matchId);
+    }
+
+    private sealed class UnknownLengthContent(byte[] body) : HttpContent
+    {
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            stream.WriteAsync(body).AsTask();
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
     }
 }

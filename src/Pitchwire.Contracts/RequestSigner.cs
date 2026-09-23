@@ -62,6 +62,12 @@ public static class RequestSigner
             return SignatureVerdict.Malformed;
         }
 
+        if (unixSeconds < DateTimeOffset.MinValue.ToUnixTimeSeconds() ||
+            unixSeconds > DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+        {
+            return SignatureVerdict.Malformed;
+        }
+
         Span<byte> provided = stackalloc byte[MacLength];
         if (!Convert.TryFromBase64String(signatureHeader, provided, out var decoded) || decoded != MacLength)
         {

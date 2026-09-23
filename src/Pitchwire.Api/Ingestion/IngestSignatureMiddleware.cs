@@ -1,3 +1,4 @@
+using System.Buffers;
 using Microsoft.Extensions.Options;
 using Pitchwire.Application.Ingestion;
 using Pitchwire.Contracts;
@@ -37,7 +38,30 @@ internal sealed partial class IngestSignatureMiddleware(
         request.EnableBuffering();
 
         using var buffer = new MemoryStream();
-        await request.Body.CopyToAsync(buffer, context.RequestAborted);
+        var chunk = ArrayPool<byte>.Shared.Rent(32 * 1024);
+
+        try
+        {
+            int read;
+
+            while ((read = await request.Body.ReadAsync(chunk.AsMemory(), context.RequestAborted)) != 0)
+            {
+                // A missing or dishonest Content-Length must not turn signature verification into
+                // an unbounded allocation. Read no more than one chunk beyond the configured cap.
+                if (buffer.Length + read > settings.MaxBodyBytes)
+                {
+                    context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+                    return;
+                }
+
+                buffer.Write(chunk, 0, read);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(chunk);
+        }
+
         request.Body.Position = 0;
 
         var verdict = RequestSigner.Verify(

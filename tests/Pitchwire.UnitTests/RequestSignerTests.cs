@@ -111,6 +111,18 @@ public sealed class RequestSignerTests
         verdict.ShouldBe(SignatureVerdict.Malformed);
     }
 
+    [Theory]
+    [InlineData("9223372036854775807")]
+    [InlineData("-9223372036854775808")]
+    public void Verify_rejects_a_numeric_timestamp_outside_the_supported_date_range(string timestamp)
+    {
+        var signature = RequestSigner.Sign(Secret, Now, Body);
+
+        var verdict = RequestSigner.Verify(Secret, signature, timestamp, Body, Now, Tolerance);
+
+        verdict.ShouldBe(SignatureVerdict.Malformed);
+    }
+
     [Fact]
     public void Sign_binds_the_signature_to_the_timestamp()
     {
