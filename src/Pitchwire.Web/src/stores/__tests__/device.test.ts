@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DeviceSettings } from "@/api/contracts";
 import { useDeviceStore } from "@/stores/device";
@@ -42,6 +42,41 @@ describe("the device store", () => {
         client.device.mockResolvedValue(null);
         client.identify.mockResolvedValue(settings);
     });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    const browserPush = () => {
+        const old = {
+            endpoint: "https://push.example.test/old",
+            toJSON: () => ({ endpoint: "https://push.example.test/old", keys: {} }),
+            unsubscribe: vi.fn().mockResolvedValue(true),
+        };
+        const fresh = {
+            endpoint: "https://push.example.test/fresh",
+            toJSON: () => ({ endpoint: "https://push.example.test/fresh", keys: {} }),
+        };
+        const registration = {
+            pushManager: {
+                getSubscription: vi.fn().mockResolvedValue(old),
+                subscribe: vi.fn().mockResolvedValue(fresh),
+            },
+        };
+
+        vi.stubGlobal("PushManager", class {});
+        vi.stubGlobal("Notification", {
+            permission: "granted",
+            requestPermission: vi.fn().mockResolvedValue("granted"),
+        });
+        vi.stubGlobal("navigator", {
+            serviceWorker: {
+                getRegistration: vi.fn().mockResolvedValue(registration),
+                ready: Promise.resolve(registration),
+            },
+        });
+        client.pushKey.mockResolvedValue("public-key");
+
+        return { old, fresh, registration };
+    };
 
     it("says push is unsupported when the browser has no push manager", async () => {
         // jsdom has neither, which is exactly the browser this branch exists for.
@@ -96,5 +131,35 @@ describe("the device store", () => {
 
         expect(store.pushState).toBe("unsupported");
         expect(client.subscribe).not.toHaveBeenCalled();
+    });
+
+    it("rotates a browser subscription left behind after its device cookie was cleared", async () => {
+        const { old, fresh, registration } = browserPush();
+        client.subscribe
+            .mockRejectedValueOnce(Object.assign(new Error("conflict"), { status: 409 }))
+            .mockResolvedValueOnce(undefined);
+        const store = useDeviceStore();
+
+        await store.load();
+
+        expect(client.identify).toHaveBeenCalledOnce();
+        expect(client.subscribe).toHaveBeenNthCalledWith(1, old.toJSON());
+        expect(old.unsubscribe).toHaveBeenCalledOnce();
+        expect(registration.pushManager.subscribe).toHaveBeenCalledOnce();
+        expect(client.subscribe).toHaveBeenNthCalledWith(2, fresh.toJSON());
+        expect(store.pushState).toBe("on");
+        expect(store.pushError).toBeNull();
+    });
+
+    it("shows a recoverable error when push registration fails", async () => {
+        browserPush();
+        client.subscribe.mockRejectedValue(new Error("network unavailable"));
+        const store = useDeviceStore();
+
+        await store.enablePush();
+
+        expect(store.pushState).toBe("off");
+        expect(store.pushError).toContain("Try again");
+        expect(store.busy).toBe(false);
     });
 });

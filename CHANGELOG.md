@@ -4,6 +4,8 @@ Notable changes, newest first. Dates are the day the work landed on `main`.
 
 ## Unreleased
 
+- A device can renew its own push subscription, but another device can no longer claim its endpoint
+  and redirect notifications. Conflicts answer 409 without changing the original subscription.
 - Chromium now exercises competition switching, combined match filters and all match-detail tabs
   against the running compose stack in CI. A failed journey keeps its trace for diagnosis.
 - Fixtures and results can now be filtered by round and team together. The season endpoint supplies

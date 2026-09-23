@@ -164,7 +164,9 @@ is looking at.
 `SameSite=Lax` cookie. The database stores only a hash of the token. The token itself never appears in a
 log.
 
-**FR-18** A device can mark teams as favourites and can subscribe to Web Push.
+**FR-18** A device can mark teams as favourites and can subscribe to Web Push. Renewing its own
+subscription may update the encryption keys. Another device presenting the same endpoint cannot take
+ownership of it or change those keys; the API answers `409 Conflict`.
 
 **FR-19** A notification is sent only when all three of these hold: the device follows the team, the event
 type is enabled in that device's preferences, and the current time falls outside the device's quiet hours.

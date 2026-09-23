@@ -16,6 +16,7 @@ export type PushState = "unsupported" | "denied" | "off" | "on";
 export const useDeviceStore = defineStore("device", () => {
     const settings = ref<DeviceSettings | null>(null);
     const pushState = ref<PushState>("off");
+    const pushError = ref<string | null>(null);
     const busy = ref(false);
 
     const favourites = computed(() => settings.value?.favourites ?? []);
@@ -33,8 +34,35 @@ export const useDeviceStore = defineStore("device", () => {
      * Identity is handed out on request rather than on every visit, so a crawler reading the live list
      * does not leave a row behind.
      */
+    const register = async (
+        registration: ServiceWorkerRegistration,
+        subscription: PushSubscription,
+    ) => {
+        try {
+            await api.subscribe(subscription.toJSON());
+        } catch (error) {
+            if (!(error instanceof Error && "status" in error && error.status === 409)) {
+                throw error;
+            }
+
+            // Clearing site data can remove the device cookie without removing the browser's push
+            // subscription. The new device cannot claim that endpoint. Only the browser holding it
+            // can retire it and obtain a fresh endpoint for its new identity.
+            if (!(await subscription.unsubscribe())) {
+                throw new Error("The old push subscription could not be retired.");
+            }
+
+            const replacement = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: await api.pushKey(),
+            });
+            await api.subscribe(replacement.toJSON());
+        }
+    };
+
     const load = async () => {
         settings.value = await api.device();
+        pushError.value = null;
 
         if (!supported()) {
             pushState.value = "unsupported";
@@ -48,6 +76,19 @@ export const useDeviceStore = defineStore("device", () => {
 
         const registration = await navigator.serviceWorker.getRegistration();
         const existing = await registration?.pushManager.getSubscription();
+
+        if (existing && registration && settings.value === null) {
+            try {
+                await ensureIdentity();
+                await register(registration, existing);
+            } catch {
+                pushError.value =
+                    "The existing push connection could not be restored. Try turning notifications on again.";
+                pushState.value = "off";
+                return;
+            }
+        }
+
         pushState.value = existing ? "on" : "off";
     };
 
@@ -86,6 +127,7 @@ export const useDeviceStore = defineStore("device", () => {
         }
 
         busy.value = true;
+        pushError.value = null;
 
         try {
             await ensureIdentity();
@@ -107,8 +149,11 @@ export const useDeviceStore = defineStore("device", () => {
                 applicationServerKey: await api.pushKey(),
             });
 
-            await api.subscribe(subscription.toJSON());
+            await register(registration, subscription);
             pushState.value = "on";
+        } catch {
+            pushState.value = "off";
+            pushError.value = "Notifications could not be connected. Try again.";
         } finally {
             busy.value = false;
         }
@@ -139,6 +184,7 @@ export const useDeviceStore = defineStore("device", () => {
         favourites,
         follows,
         pushState,
+        pushError,
         busy,
         load,
         ensureIdentity,
