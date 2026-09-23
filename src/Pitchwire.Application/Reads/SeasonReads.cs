@@ -79,6 +79,51 @@ public sealed class SeasonReads(IPitchwireDbContext db, HybridCache cache)
                 season.League.Slug))
             .ToListAsync(cancellationToken);
 
+    /// <summary>The participants and scheduled rounds for one season.</summary>
+    public async Task<SeasonDetail?> DetailAsync(Guid seasonId, CancellationToken cancellationToken)
+    {
+        var season = await db.Seasons
+            .AsNoTracking()
+            .Where(item => item.Id == seasonId)
+            .Select(item => new
+            {
+                item.Id,
+                item.Year,
+                League = new LeagueRef(
+                    item.League!.Id,
+                    item.League.Name,
+                    item.League.Slug,
+                    item.League.Country!.Name),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (season is null)
+        {
+            return null;
+        }
+
+        var teams = await db.TeamSeasons
+            .AsNoTracking()
+            .Where(entry => entry.SeasonId == seasonId)
+            .OrderBy(entry => entry.Team!.Name)
+            .Select(entry => new TeamRef(
+                entry.Team!.Id,
+                entry.Team.Name,
+                entry.Team.ShortName,
+                entry.Team.Slug))
+            .ToListAsync(cancellationToken);
+
+        var rounds = await db.Matches
+            .AsNoTracking()
+            .Where(match => match.SeasonId == seasonId)
+            .Select(match => match.Round)
+            .Distinct()
+            .OrderBy(round => round)
+            .ToListAsync(cancellationToken);
+
+        return new SeasonDetail(season.Id, season.Year, season.League, teams, rounds);
+    }
+
     public async Task<IReadOnlyList<TableRow>> TableAsync(Guid seasonId, CancellationToken cancellationToken) =>
         await cache.GetOrCreateAsync(
             CacheScope.Table(seasonId),

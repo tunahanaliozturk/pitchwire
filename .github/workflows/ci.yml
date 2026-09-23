@@ -130,6 +130,9 @@ jobs:
         run: npm ci
         working-directory: src/Pitchwire.Web
 
+      - name: Restore the API
+        run: dotnet restore src/Pitchwire.Api/Pitchwire.Api.csproj
+
       # Takes the document from the running service and regenerates the client types from it. If the
       # committed copies differ, the server has changed shape and nobody told the browser.
       - name: Regenerate the contract

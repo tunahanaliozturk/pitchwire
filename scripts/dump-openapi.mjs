@@ -6,7 +6,7 @@
 // The host is started with --no-launch-profile on purpose: launchSettings.json overrides the address
 // from the environment, and the first version of this script spent its time polling a port nobody was
 // listening on.
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,13 +15,22 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const port = process.env.OPENAPI_PORT ?? "5199";
 const output = join(root, "src", "Pitchwire.Web", "openapi.json");
 
+const build = spawnSync(
+  "dotnet",
+  ["build", "src/Pitchwire.Api/Pitchwire.Api.csproj", "-c", "Release", "--nologo", "--no-restore"],
+  { cwd: root, stdio: "inherit" },
+);
+
+if (build.status !== 0) {
+  process.exit(build.status ?? 1);
+}
+
 const api = spawn(
   "dotnet",
-  ["run", "--project", "src/Pitchwire.Api", "--no-launch-profile", "--urls", `http://127.0.0.1:${port}`],
+  [join(root, "src", "Pitchwire.Api", "bin", "Release", "net10.0", "Pitchwire.Api.dll"), "--urls", `http://127.0.0.1:${port}`],
   {
     cwd: root,
-    stdio: "ignore",
-    shell: process.platform === "win32",
+    stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
       // Enough to start. Nothing here reaches a database: generating the document only reads routes.
@@ -29,17 +38,28 @@ const api = spawn(
       Ingest__Secret: "contract-generation-only",
       Seed__Enabled: "false",
       ASPNETCORE_ENVIRONMENT: "Development",
+      // A failed background database probe must not write to the Windows Event Log while the
+      // contract-only host runs under an unprivileged developer account.
+      Logging__EventLog__LogLevel__Default: "None",
     },
   },
 );
 
-const stop = () => {
-  api.kill();
+let startupOutput = "";
+for (const stream of [api.stdout, api.stderr]) {
+  stream.on("data", (chunk) => {
+    startupOutput = `${startupOutput}${chunk.toString()}`.slice(-4000);
+  });
+}
+api.on("error", (error) => {
+  startupOutput = `${startupOutput}\n${error.message}`.slice(-4000);
+});
 
-  if (process.platform === "win32") {
-    // dotnet run starts the host as a child, and killing the launcher leaves it holding the port.
-    spawn("taskkill", ["/F", "/IM", "Pitchwire.Api.exe"], { stdio: "ignore", shell: true });
-  }
+const stop = () => {
+  // The child is the API process itself, not a `dotnet run` launcher with another child.
+  api.kill();
+  api.stdout.destroy();
+  api.stderr.destroy();
 };
 
 try {
@@ -61,6 +81,7 @@ try {
 
   if (document === null) {
     console.error(`The API did not serve its OpenAPI document on port ${port}.`);
+    console.error(startupOutput);
     process.exitCode = 1;
   } else {
     mkdirSync(dirname(output), { recursive: true });

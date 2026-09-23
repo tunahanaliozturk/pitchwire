@@ -4,6 +4,8 @@ Notable changes, newest first. Dates are the day the work landed on `main`.
 
 ## Unreleased
 
+- Fixtures and results can now be filtered by round and team together. The season endpoint supplies
+  the choices, and continuation links and cache keys keep each filtered list separate.
 - Finished matches now have a Results screen with the same league picker and continuation paging as
   fixtures. Both lists group matches by local date. The navigation scrolls on narrow screens so every
   section remains reachable.

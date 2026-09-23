@@ -20,15 +20,17 @@ public static class CacheScope
     public static string Scorers(Guid seasonId, int top) =>
         string.Create(CultureInfo.InvariantCulture, $"scorers:{seasonId}:{top}");
 
-    public static string Fixtures(Guid seasonId, int? round, int top, string? cursor) =>
+    public static string Fixtures(Guid seasonId, int? round, Guid? teamId, int top, string? cursor) =>
         // Invariant throughout. A cache key that formats a number differently under another locale is
         // a key that stops matching itself, and the symptom is a cache that silently never hits.
         string.Create(
             CultureInfo.InvariantCulture,
-            $"fixtures:{seasonId}:{round?.ToString(CultureInfo.InvariantCulture) ?? "all"}:{top}:{cursor ?? "start"}");
+            $"fixtures:{seasonId}:{round?.ToString(CultureInfo.InvariantCulture) ?? "all"}:{teamId?.ToString("N") ?? "all"}:{top}:{cursor ?? "start"}");
 
-    public static string Results(Guid seasonId, int top, string? cursor) =>
-        string.Create(CultureInfo.InvariantCulture, $"results:{seasonId}:{top}:{cursor ?? "start"}");
+    public static string Results(Guid seasonId, int? round, Guid? teamId, int top, string? cursor) =>
+        string.Create(
+            CultureInfo.InvariantCulture,
+            $"results:{seasonId}:{round?.ToString(CultureInfo.InvariantCulture) ?? "all"}:{teamId?.ToString("N") ?? "all"}:{top}:{cursor ?? "start"}");
 
     public static string Form(Guid teamId, Guid seasonId, int count) =>
         string.Create(CultureInfo.InvariantCulture, $"form:{seasonId}:{teamId}:{count}");

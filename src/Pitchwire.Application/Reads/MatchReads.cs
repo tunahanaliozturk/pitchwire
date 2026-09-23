@@ -54,11 +54,12 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
     public async Task<MatchPage> FixturesAsync(
         Guid seasonId,
         int? round,
+        Guid? teamId,
         int top,
         MatchCursor? after,
         CancellationToken cancellationToken) =>
         await cache.GetOrCreateAsync(
-            CacheScope.Fixtures(seasonId, round, top, Position(after)),
+            CacheScope.Fixtures(seasonId, round, teamId, top, Position(after)),
             async token =>
             {
                 var query = db.Matches
@@ -70,6 +71,11 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
                     query = query.Where(m => m.Round == wanted);
                 }
 
+                if (teamId is { } team)
+                {
+                    query = query.Where(m => m.HomeTeamId == team || m.AwayTeamId == team);
+                }
+
                 return await AscendingPageAsync(query, top, after, token);
             },
             Lists,
@@ -78,17 +84,29 @@ public sealed class MatchReads(IPitchwireDbContext db, HybridCache cache)
 
     public async Task<MatchPage> ResultsAsync(
         Guid seasonId,
+        int? round,
+        Guid? teamId,
         int top,
         MatchCursor? after,
         CancellationToken cancellationToken) =>
         await cache.GetOrCreateAsync(
-            CacheScope.Results(seasonId, top, Position(after)),
+            CacheScope.Results(seasonId, round, teamId, top, Position(after)),
             async token =>
             {
                 // Newest first, because the question a results list answers is what happened last.
                 var query = db.Matches
                     .AsNoTracking()
                     .Where(m => m.SeasonId == seasonId && m.Status == MatchStatus.Finished);
+
+                if (round is { } wanted)
+                {
+                    query = query.Where(m => m.Round == wanted);
+                }
+
+                if (teamId is { } team)
+                {
+                    query = query.Where(m => m.HomeTeamId == team || m.AwayTeamId == team);
+                }
 
                 if (after is { } cursor)
                 {

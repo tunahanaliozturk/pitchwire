@@ -20,6 +20,7 @@ internal static class ReadEndpoints
         routes.MapGet("/countries", (Delegate)CountriesAsync).WithName("Countries");
         routes.MapGet("/countries/{countrySlug}/leagues", (Delegate)LeaguesAsync).WithName("Leagues");
         routes.MapGet("/seasons", (Delegate)SeasonsAsync).WithName("Seasons");
+        routes.MapGet("/seasons/{seasonId:guid}", (Delegate)SeasonAsync).WithName("SeasonDetail");
         routes.MapGet("/matches/live", (Delegate)LiveAsync).WithName("LiveMatches");
         routes.MapGet("/matches/{matchId:guid}", (Delegate)DetailAsync).WithName("MatchDetail");
         routes.MapGet("/matches/{matchId:guid}/events", (Delegate)TimelineAsync).WithName("MatchTimeline");
@@ -53,6 +54,7 @@ internal static class ReadEndpoints
         MatchReads reads,
         Guid seasonId,
         [FromQuery] int? round,
+        [FromQuery] Guid? teamId,
         [FromQuery(Name = TopParameter)] int? top,
         [FromQuery(Name = SkipTokenParameter)] string? skipToken,
         CancellationToken cancellationToken)
@@ -63,7 +65,7 @@ internal static class ReadEndpoints
         }
 
         var size = PageSize.Clamp(top);
-        var page = await reads.FixturesAsync(seasonId, round, size, cursor, cancellationToken);
+        var page = await reads.FixturesAsync(seasonId, round, teamId, size, cursor, cancellationToken);
 
         return TypedResults.Ok(ToPage(context, page, MatchReads.FixturesToken));
     }
@@ -72,6 +74,8 @@ internal static class ReadEndpoints
         HttpContext context,
         MatchReads reads,
         Guid seasonId,
+        [FromQuery] int? round,
+        [FromQuery] Guid? teamId,
         [FromQuery(Name = TopParameter)] int? top,
         [FromQuery(Name = SkipTokenParameter)] string? skipToken,
         CancellationToken cancellationToken)
@@ -82,7 +86,7 @@ internal static class ReadEndpoints
         }
 
         var size = PageSize.Clamp(top);
-        var page = await reads.ResultsAsync(seasonId, size, cursor, cancellationToken);
+        var page = await reads.ResultsAsync(seasonId, round, teamId, size, cursor, cancellationToken);
 
         return TypedResults.Ok(ToPage(context, page, MatchReads.ResultsToken));
     }
@@ -120,6 +124,16 @@ internal static class ReadEndpoints
         [FromQuery] Guid? leagueId,
         CancellationToken cancellationToken) =>
         TypedResults.Ok(await reads.SeasonsAsync(leagueId, cancellationToken));
+
+    private static async Task<Results<Ok<SeasonDetail>, NotFound>> SeasonAsync(
+        SeasonReads reads,
+        Guid seasonId,
+        CancellationToken cancellationToken)
+    {
+        var season = await reads.DetailAsync(seasonId, cancellationToken);
+
+        return season is null ? TypedResults.NotFound() : TypedResults.Ok(season);
+    }
 
     private static async Task<Ok<IReadOnlyList<TableRow>>> TableAsync(
         SeasonReads reads,

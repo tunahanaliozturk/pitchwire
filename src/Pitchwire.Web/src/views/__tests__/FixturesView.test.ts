@@ -9,6 +9,7 @@ import FixturesView from "@/views/FixturesView.vue";
 const client = vi.hoisted(() => ({
     countries: vi.fn(),
     leagues: vi.fn(),
+    season: vi.fn(),
     fixtures: vi.fn(),
     page: vi.fn(),
 }));
@@ -48,6 +49,13 @@ describe("fixtures by league", () => {
                 currentSeasonId: `${slug}-season`,
             },
         ]);
+        client.season.mockImplementation(async (id: string) => ({
+            id,
+            year: 2026,
+            league: { id, name: id, slug: id, country: "England" },
+            teams: [],
+            rounds: [1, 2],
+        }));
         client.fixtures.mockImplementation(async (season: string) => ({
             value: [match(season, season === "england-season" ? "England" : "Spain")],
             nextLink: season === "england-season" ? "/api/england/page-2" : null,

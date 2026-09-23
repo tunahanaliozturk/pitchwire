@@ -32,6 +32,14 @@ export const leagueRef = z.object({
     country: z.string(),
 });
 
+export const seasonDetail = z.object({
+    id: z.string(),
+    year: z.number(),
+    league: leagueRef,
+    teams: z.array(teamRef),
+    rounds: z.array(z.number()),
+});
+
 export const matchSummary = z.object({
     id: z.string(),
     round: z.number(),
@@ -171,6 +179,7 @@ export type TeamStatisticsView = z.infer<typeof teamStatisticsView>;
 export type DeviceSettings = z.infer<typeof deviceSettings>;
 export type PushKey = z.infer<typeof pushKey>;
 export type SeasonSummary = z.infer<typeof seasonSummary>;
+export type SeasonDetail = z.infer<typeof seasonDetail>;
 export type LeagueRef = z.infer<typeof leagueRef>;
 export type TeamRef = z.infer<typeof teamRef>;
 export type MatchSummary = z.infer<typeof matchSummary>;
@@ -197,6 +206,7 @@ export type ContractChecks = [
     Agrees<Equal<DeviceSettings, components["schemas"]["DeviceSettings"]>>,
     Agrees<Equal<PushKey, components["schemas"]["PushKey"]>>,
     Agrees<Equal<SeasonSummary, components["schemas"]["SeasonSummary"]>>,
+    Agrees<Equal<SeasonDetail, components["schemas"]["SeasonDetail"]>>,
     Agrees<Equal<LeagueRef, components["schemas"]["LeagueRef"]>>,
     Agrees<Equal<TeamRef, components["schemas"]["TeamRef"]>>,
     Agrees<Equal<MatchSummary, components["schemas"]["MatchSummary"]>>,

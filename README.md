@@ -42,7 +42,8 @@ on a pitch, per side statistics, and a rating for every player who was on long e
 one of those numbers is derived from the event log, so the page and the timeline cannot disagree.
 
 Fixtures and finished results follow the selected league. Both lists group matches by local date and
-follow the server's continuation links when there is more to show.
+follow the server's continuation links when there is more to show. A round and a team can be selected
+together; the available choices come from the season's stored schedule.
 
 ## The stack
 
@@ -93,9 +94,9 @@ benchmark is why that was worth doing and how much it was worth.
 verifying one costs 420 ns and 3.2 µs, and a continuation token is 154 ns to encode and 240 ns to
 decode.
 
-**The client**: 46.7 kB gzipped against a 200 kB budget that CI enforces.
+**The client**: 46.6 kB gzipped against a 200 kB budget that CI enforces.
 
-**The tests**: 81 unit, 67 integration against a real PostgreSQL in Testcontainers, 44 in the browser
+**The tests**: 81 unit, 69 integration against a real PostgreSQL in Testcontainers, 44 in the browser
 suite. Five CI jobs, including one that brings the whole stack up in compose and asserts that a match
 actually finished with a real event log behind it.
 
