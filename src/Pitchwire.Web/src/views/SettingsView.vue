@@ -33,7 +33,7 @@ const saving = computed(() => device.busy);
 const error = computed(() =>
     device.pushState === "denied"
         ? "Notifications are blocked in this browser. Turn them back on in its site settings."
-        : null,
+        : device.pushError,
 );
 
 onMounted(async () => {

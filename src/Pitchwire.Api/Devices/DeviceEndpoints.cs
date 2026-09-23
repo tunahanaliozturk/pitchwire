@@ -154,7 +154,7 @@ public static class DeviceEndpoints
         return TypedResults.Ok(await SettingsAsync(registry, device, cancellationToken));
     }
 
-    private static async Task<Results<NoContent, UnauthorizedHttpResult>> SubscribeAsync(
+    private static async Task<Results<NoContent, UnauthorizedHttpResult, Conflict>> SubscribeAsync(
         HttpContext context,
         DeviceRegistry registry,
         SubscriptionRequest request,
@@ -167,7 +167,11 @@ public static class DeviceEndpoints
             return TypedResults.Unauthorized();
         }
 
-        await registry.SubscribeAsync(device.Id, request.Endpoint, request.Keys.P256dh, request.Keys.Auth, cancellationToken);
+        if (!await registry.SubscribeAsync(
+                device.Id, request.Endpoint, request.Keys.P256dh, request.Keys.Auth, cancellationToken))
+        {
+            return TypedResults.Conflict();
+        }
 
         return TypedResults.NoContent();
     }

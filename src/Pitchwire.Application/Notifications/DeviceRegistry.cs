@@ -15,7 +15,7 @@ namespace Pitchwire.Application.Notifications;
 /// price is that favourites do not follow a person to a second device, and that is written down as a
 /// known limitation rather than hidden.
 /// </remarks>
-public sealed class DeviceRegistry(IPitchwireDbContext db, TimeProvider clock)
+public sealed class DeviceRegistry(IPitchwireDbContext db, IStoreFailures failures, TimeProvider clock)
 {
     /// <summary>256 bits, which is well past what anybody could work through.</summary>
     private const int TokenBytes = 32;
@@ -97,7 +97,7 @@ public sealed class DeviceRegistry(IPitchwireDbContext db, TimeProvider clock)
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task SubscribeAsync(
+    public async Task<bool> SubscribeAsync(
         Guid deviceId,
         string endpoint,
         string p256dh,
@@ -110,9 +110,13 @@ public sealed class DeviceRegistry(IPitchwireDbContext db, TimeProvider clock)
 
         if (existing is not null)
         {
-            // A browser re-subscribing sends the same endpoint. Moving it rather than adding a second
-            // row is what stops one goal arriving twice.
-            existing.DeviceId = deviceId;
+            // An endpoint is a capability URL, not proof that the caller owns the browser that made
+            // it. A different device must not be able to redirect its notifications to itself.
+            if (existing.DeviceId != deviceId)
+            {
+                return false;
+            }
+
             existing.P256dh = p256dh;
             existing.Auth = auth;
             existing.FailureCount = 0;
@@ -130,7 +134,17 @@ public sealed class DeviceRegistry(IPitchwireDbContext db, TimeProvider clock)
             });
         }
 
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException failure) when (failures.IsUniqueViolation(failure))
+        {
+            // Two registrations can both miss the read above. The endpoint's unique index chooses
+            // one owner; the loser gets the same conflict as a later takeover attempt.
+            return false;
+        }
     }
 
     public async Task UnsubscribeAsync(Guid deviceId, string endpoint, CancellationToken cancellationToken)

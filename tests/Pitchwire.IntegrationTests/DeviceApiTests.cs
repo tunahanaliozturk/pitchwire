@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Pitchwire.Api.Devices;
 using Pitchwire.Contracts;
 using Pitchwire.Infrastructure.Persistence;
@@ -131,6 +132,48 @@ public sealed class DeviceApiTests(PostgresFixture postgres) : IClassFixture<Pos
             TestContext.Current.CancellationToken);
 
         both.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Another_device_cannot_take_over_an_existing_push_subscription()
+    {
+        await using var app = new PitchwireApiFactory(postgres.ConnectionString);
+        using var owner = app.CreateClient();
+        using var stranger = app.CreateClient();
+        await IdentifyAsync(owner);
+        await IdentifyAsync(stranger);
+
+        const string endpoint = "https://push.example.test/subscriptions/owned";
+        using var registered = await owner.PostAsJsonAsync(
+            "/devices/me/push-subscriptions",
+            new SubscriptionRequest(endpoint, new SubscriptionKeys("owner-key", "owner-auth")),
+            Json,
+            TestContext.Current.CancellationToken);
+        registered.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        using var renewed = await owner.PostAsJsonAsync(
+            "/devices/me/push-subscriptions",
+            new SubscriptionRequest(endpoint, new SubscriptionKeys("renewed-key", "renewed-auth")),
+            Json,
+            TestContext.Current.CancellationToken);
+        renewed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        var ownerSettings = await owner.GetFromJsonAsync<DeviceSettings>(
+            "/devices/me", Json, TestContext.Current.CancellationToken);
+        ownerSettings.ShouldNotBeNull();
+
+        using var stolen = await stranger.PostAsJsonAsync(
+            "/devices/me/push-subscriptions",
+            new SubscriptionRequest(endpoint, new SubscriptionKeys("stranger-key", "stranger-auth")),
+            Json,
+            TestContext.Current.CancellationToken);
+        stolen.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+
+        await using var db = postgres.CreateContext();
+        var subscription = await db.PushSubscriptions.SingleAsync(TestContext.Current.CancellationToken);
+        subscription.DeviceId.ShouldBe(ownerSettings.Id);
+        subscription.P256dh.ShouldBe("renewed-key");
+        subscription.Auth.ShouldBe("renewed-auth");
     }
 
     /// <summary>

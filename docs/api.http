@@ -104,6 +104,16 @@ Content-Type: application/json
 ### The public key a browser needs to subscribe to push
 GET {{api}}/push/public-key
 
+### Register this browser's push endpoint
+# An endpoint already held by another device answers 409; it does not move between devices.
+POST {{api}}/devices/me/push-subscriptions
+Content-Type: application/json
+
+{
+  "endpoint": "https://push.example.test/subscriptions/replace-with-browser-value",
+  "keys": { "p256dh": "replace-with-browser-key", "auth": "replace-with-browser-auth" }
+}
+
 ### The OpenAPI document
 # The browser types are generated from this, and a CI job fails if the two have drifted apart. There
 # is a readable version of the same thing at http://localhost:5080/scalar/v1

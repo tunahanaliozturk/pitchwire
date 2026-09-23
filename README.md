@@ -96,7 +96,7 @@ decode.
 
 **The client**: 46.6 kB gzipped against a 200 kB budget that CI enforces.
 
-**The tests**: 81 unit, 69 integration against a real PostgreSQL in Testcontainers, 44 component and
+**The tests**: 81 unit, 70 integration against a real PostgreSQL in Testcontainers, 46 component and
 unit tests in the web project, and two Chromium journeys against the running stack. Five CI jobs,
 including one that asserts a match finished with a real event log and takes a browser through the
 competition picker, filters and match details.
