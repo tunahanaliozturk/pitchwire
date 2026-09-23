@@ -39,6 +39,7 @@ const cycle = () => {
         <nav aria-label="Sections">
             <RouterLink to="/">Live</RouterLink>
             <RouterLink to="/fixtures">Fixtures</RouterLink>
+            <RouterLink to="/results">Results</RouterLink>
             <RouterLink to="/table">Table</RouterLink>
             <RouterLink to="/scorers">Scorers</RouterLink>
             <RouterLink to="/settings">Settings</RouterLink>
@@ -76,6 +77,25 @@ nav {
     display: flex;
     gap: 4px;
     margin-left: auto;
+}
+
+@media (max-width: 640px) {
+    .bar {
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    nav {
+        order: 3;
+        width: 100%;
+        margin-left: 0;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .theme {
+        margin-left: auto;
+    }
 }
 
 nav a {

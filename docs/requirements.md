@@ -246,6 +246,10 @@ return it on close.
 registered still renders and still looks enabled, and nothing in a type checker or a linter notices,
 so the links are read out of the shell and put to the router in a test.
 
+**FR-38** A reader can open finished results for the selected league. Results are grouped by the
+reader's local date, newest first, and additional pages follow the API's `nextLink` without decoding it
+in the browser. An empty season says that no results have been played yet.
+
 ## 5. Data model
 
 PostgreSQL with EF Core 10. Migrations live in the repository and are applied on startup in development
