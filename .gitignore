@@ -16,6 +16,8 @@ artifacts/
 # Test / tooling
 TestResults/
 coverage/
+playwright-report/
+test-results/
 *.coverage
 *.trx
 .aspire/

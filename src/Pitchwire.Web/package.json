@@ -14,8 +14,9 @@
     "type-check": "vue-tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write src",
-    "format:check": "prettier --check src scripts",
+    "format:check": "prettier --check src scripts e2e playwright.config.ts",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
     "contract": "node ../../scripts/dump-openapi.mjs && npm run contract:types",
     "contract:types": "openapi-typescript openapi.json -o src/api/schema.d.ts"
@@ -29,6 +30,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@testing-library/vue": "8.1.0",
     "@types/node": "^24.13.6",
     "@vitejs/plugin-vue": "6.0.9",

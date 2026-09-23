@@ -3,7 +3,7 @@ import accessibility from "eslint-plugin-vuejs-accessibility";
 import typescript from "typescript-eslint";
 
 export default typescript.config(
-    { ignores: ["dist", "coverage", "src/api/schema.d.ts"] },
+    { ignores: ["dist", "coverage", "playwright-report", "test-results", "src/api/schema.d.ts"] },
     ...typescript.configs.recommended,
     ...vue.configs["flat/recommended"],
     ...accessibility.configs["flat/recommended"],

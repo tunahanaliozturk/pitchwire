@@ -24,6 +24,19 @@ actually ready rather than merely started.
 The API applies its migrations and seeds the catalogue on start, because `Seed__Enabled` is `true` in
 the compose file. It is off by default everywhere else.
 
+To repeat the browser journeys locally while the stack is running, use the web project:
+
+```
+cd src/Pitchwire.Web
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+The compose CI job runs the same tests in Chromium. It installs the browser's Linux dependencies first
+and keeps a trace and screenshot if a journey fails. The tests need the stack, not just Vite: they
+follow the real season and match responses through nginx.
+
 Stopping with `docker compose down` keeps the data. `docker compose down -v` removes the volumes and
 the next start is a fresh season.
 
