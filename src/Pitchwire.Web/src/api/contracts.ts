@@ -2,6 +2,10 @@ import { z } from "zod";
 
 import type { components } from "./schema";
 
+// Zod's JIT feature probe calls Function(""), which a strict CSP blocks and reports even though
+// Zod catches the error. Parse without that probe; the API payloads are small enough not to need JIT.
+z.config({ jitless: true });
+
 /**
  * What the server actually sends, checked at the boundary.
  *

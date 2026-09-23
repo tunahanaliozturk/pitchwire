@@ -33,3 +33,6 @@ the formation and statistics bars' dynamic positions; scripts remain restricted 
 The compose credentials and HMAC secret are deliberately development-only. Supply unique secrets
 from a secret manager, stable VAPID keys, private service networking and a trusted TLS edge before
 deployment. Do not trust arbitrary `X-Forwarded-*` headers from outside that edge.
+
+Zod parses API responses in jitless mode. This avoids its `Function("")` feature probe, so the
+browser can keep `script-src 'self'` without `unsafe-eval` or a spurious CSP violation.
