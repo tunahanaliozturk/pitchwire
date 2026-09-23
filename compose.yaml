@@ -38,6 +38,7 @@ services:
       dockerfile: src/Pitchwire.Api/Dockerfile
     environment:
       ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=pitchwire;Username=pitchwire;Password=pitchwire"
+      ConnectionStrings__Redis: "redis:6379"
       Ingest__Secret: *ingest-secret
       Ingest__FeedBaseAddress: "http://feed:8080/"
       # Applies migrations and puts the league in place on start. Off by default everywhere else.

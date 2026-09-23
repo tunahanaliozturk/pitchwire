@@ -68,6 +68,10 @@ with `__` between the sections.
 |---|---|---|
 | `ConnectionStrings__Postgres` | — | Required. |
 | `ConnectionStrings__Redis` | none | Without it the cache is first level only, which is fine for one instance. |
+
+Compose sets the Redis connection to `redis:6379`; the CI quick-start test checks that a table read
+actually puts an entry in Redis. Omitting the connection when running the API separately leaves only
+the local first level.
 | `Ingest__Secret` | — | The shared secret the feed signs with. Required. |
 | `Ingest__Provider` | `simulator` | The provider name stored against each event. |
 | `Ingest__ReplayTolerance` | 5 minutes | How far a signed timestamp may be from now. |

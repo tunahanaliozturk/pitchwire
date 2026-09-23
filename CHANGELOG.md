@@ -4,6 +4,8 @@ Notable changes, newest first. Dates are the day the work landed on `main`.
 
 ## Unreleased
 
+- Compose now gives the API its Redis connection, and CI checks that a table read populates Redis.
+  Previously the Redis container started but the API used only its local cache.
 - Signed ingestion now enforces its body limit even when the provider omits `Content-Length`, and
   numeric timestamps outside .NET's date range answer 401 instead of causing a server error.
 - The local stack now binds its ports to loopback. The browser-facing proxy adds CSP and transport,

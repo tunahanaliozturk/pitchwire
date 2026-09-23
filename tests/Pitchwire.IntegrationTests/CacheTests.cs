@@ -61,6 +61,26 @@ public sealed class CacheTests(PostgresFixture postgres, RedisFixture redis)
     }
 
     [Fact]
+    public async Task A_second_host_reads_an_entry_from_redis_instead_of_building_it_again()
+    {
+        await using var first = Factory();
+        await using var second = Factory();
+
+        using var firstScope = first.Services.CreateScope();
+        using var secondScope = second.Services.CreateScope();
+        var firstCache = firstScope.ServiceProvider.GetRequiredService<HybridCache>();
+        var secondCache = secondScope.ServiceProvider.GetRequiredService<HybridCache>();
+        var key = $"shared-value:{Guid.NewGuid()}";
+        var builds = 0;
+
+        ValueTask<int> Build(CancellationToken _) => new(Interlocked.Increment(ref builds));
+
+        (await firstCache.GetOrCreateAsync(key, Build, cancellationToken: TestContext.Current.CancellationToken)).ShouldBe(1);
+        (await secondCache.GetOrCreateAsync(key, Build, cancellationToken: TestContext.Current.CancellationToken)).ShouldBe(1);
+        builds.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task A_tag_dropped_by_one_instance_is_not_seen_by_another()
     {
         // Two hosts, one Redis, which is what a second replica would look like. The entry is shared
