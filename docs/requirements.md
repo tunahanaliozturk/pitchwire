@@ -386,6 +386,8 @@ Correctness requirements that are not about speed:
 Security requirements:
 
 * Ingestion is authenticated by HMAC with a replay window and constant time comparison.
+* The ingestion body limit is enforced while reading, even without `Content-Length`; oversized
+  batches are rejected before signature verification.
 * Device tokens are 256 bits of cryptographic randomness, stored hashed, never logged.
 * The browser-facing `/api` proxy limits requests by the socket's client IP, including device writes;
   the limit cannot be evaded with a caller-supplied forwarding header. Per-device write limits and a

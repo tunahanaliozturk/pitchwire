@@ -18,6 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOptions<IngestOptions>()
     .Bind(builder.Configuration.GetSection(IngestOptions.SectionName))
     .Validate(options => !string.IsNullOrWhiteSpace(options.Secret), "The ingestion secret is not configured.")
+    .Validate(options => options.MaxBodyBytes > 0, "The ingestion body limit must be positive.")
     .ValidateOnStart();
 
 // Read once, before the container is built, because the provider address decides how the typed HTTP

@@ -4,6 +4,8 @@ Notable changes, newest first. Dates are the day the work landed on `main`.
 
 ## Unreleased
 
+- Signed ingestion now enforces its body limit even when the provider omits `Content-Length`, and
+  numeric timestamps outside .NET's date range answer 401 instead of causing a server error.
 - The local stack now binds its ports to loopback. The browser-facing proxy adds CSP and transport,
   MIME, frame and referrer headers, and applies a per-client-IP `/api` rate limit that ignores
   caller-supplied forwarding headers.

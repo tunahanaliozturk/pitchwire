@@ -19,8 +19,10 @@ the same origin. The feed, database and cache talk over the internal compose net
 
 The API validates device tokens before writes, refuses a push endpoint already owned by another
 device, verifies HMACs in constant time and deduplicates feed events at a database unique index. The
-browser cookie is HttpOnly, Secure and SameSite=Lax. Nginx adds CSP, HSTS, MIME-sniffing, frame and
-referrer headers to successful and error responses. Its `/api` limit uses the real socket address,
+ingest boundary caps bytes as they arrive, even when no length header is present. Out-of-range
+timestamps are rejected rather than turning into exceptions. The browser cookie is HttpOnly, Secure
+and SameSite=Lax. Nginx adds CSP, HSTS, MIME-sniffing, frame and referrer headers to successful and
+error responses. Its `/api` limit uses the real socket address,
 not a caller-supplied forwarding header. Compose publishes ports only on loopback.
 
 ## What remains?
