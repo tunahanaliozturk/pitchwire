@@ -1,11 +1,26 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 type Match = { id: string; round: number; home: { id: string }; away: { id: string } };
 type MatchPage = { value: Match[] };
 
+type ObservedWindow = Window & { pitchwireCspViolations?: string[] };
+
+const observeCsp = (page: Page) =>
+    page.addInitScript(() => {
+        const violations: string[] = [];
+        (window as ObservedWindow).pitchwireCspViolations = violations;
+        window.addEventListener("securitypolicyviolation", (event) => {
+            violations.push(`${event.effectiveDirective}: ${event.blockedURI}`);
+        });
+    });
+
+const cspViolations = (page: Page) =>
+    page.evaluate(() => (window as ObservedWindow).pitchwireCspViolations ?? []);
+
 test("a competition change and combined filters reach the real read API", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    await observeCsp(page);
 
     await page.goto("/fixtures");
     await expect(page.getByRole("heading", { name: "Fixtures" })).toBeVisible();
@@ -51,6 +66,7 @@ test("a competition change and combined filters reach the real read API", async 
     ).toBe(true);
     await expect(page.locator("a.row")).toHaveCount(matches.value.length);
     expect(errors).toEqual([]);
+    expect(await cspViolations(page)).toEqual([]);
 });
 
 test("a match is readable from a narrow screen, including every detail tab", async ({
@@ -59,6 +75,7 @@ test("a match is readable from a narrow screen, including every detail tab", asy
 }) => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    await observeCsp(page);
 
     const seasonsResponse = await request.get("/api/seasons");
     expect(seasonsResponse.ok()).toBe(true);
@@ -96,4 +113,5 @@ test("a match is readable from a narrow screen, including every detail tab", asy
     await expect(page).toHaveURL(/\/results$/);
     await expect(page.getByRole("heading", { name: "Results" })).toBeVisible();
     expect(errors).toEqual([]);
+    expect(await cspViolations(page)).toEqual([]);
 });

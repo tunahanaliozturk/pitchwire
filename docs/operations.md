@@ -21,6 +21,12 @@ actually ready rather than merely started.
 | postgres | 5432 | The database |
 | redis | 6379 | The cache's second level |
 
+Compose binds every published port to `127.0.0.1`. It is a local demo with known database
+credentials, not a remote deployment template. The browser goes through the web port, which adds
+security headers and limits `/api` to five requests per second per client IP with a burst of 25.
+Direct requests to the local API port do not pass through that limit. For remote use, put the web
+service behind TLS and keep the API, feed, Redis and PostgreSQL private; see [security.md](security.md).
+
 The API applies its migrations and seeds the catalogue on start, because `Seed__Enabled` is `true` in
 the compose file. It is off by default everywhere else.
 

@@ -387,13 +387,16 @@ Security requirements:
 
 * Ingestion is authenticated by HMAC with a replay window and constant time comparison.
 * Device tokens are 256 bits of cryptographic randomness, stored hashed, never logged.
-* Rate limits apply per IP on public reads, per device on device writes, and under a separate policy on
-  ingestion.
-* CORS is restricted to the known origin. CSP, HSTS and `X-Content-Type-Options` are set.
-* No secret is committed. Development uses user secrets, containers use environment variables. This
-  includes the VAPID private key and the ingestion HMAC secret. When no VAPID pair is configured the
-  service generates one for that run and says so, rather than shipping a private key in a compose file
-  so that a demo starts one step faster.
+* The browser-facing `/api` proxy limits requests by the socket's client IP, including device writes;
+  the limit cannot be evaded with a caller-supplied forwarding header. Per-device write limits and a
+  separate ingestion limit remain deployment work, not protections this build claims to have.
+* The browser uses a same-origin API proxy; no cross-origin browser access is enabled. The proxy sets
+  CSP, HSTS, `X-Content-Type-Options` and frame/referrer policy headers. HSTS takes effect only when
+  the site is actually served over HTTPS.
+* No production secret is committed. The compose HMAC value and database password are publicly known
+  demo credentials, never suitable for deployment. Production uses a secret manager; development can
+  use user secrets. When no VAPID pair is configured, the service generates one for that run and says
+  so rather than shipping a private key in the repository.
 * Raw SQL appears only in the recompute path and is parameterised.
 * No dependency with a commercial licence, at any depth, in either the .NET or the npm graph. Enforced by
   the licence audit tool in CI.
