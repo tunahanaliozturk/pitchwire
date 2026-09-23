@@ -18,7 +18,12 @@ export const useLeagueStore = defineStore("league", () => {
     const leagues = ref<LeagueSummary[]>([]);
     const countrySlug = ref<string | null>(null);
     const leagueId = ref<string | null>(null);
-    const loading = ref(false);
+    const loadingCountries = ref(false);
+    const loadingLeagues = ref(false);
+    const loading = computed(() => loadingCountries.value || loadingLeagues.value);
+    const error = ref<string | null>(null);
+    let countryRequest = 0;
+    let pendingLoad: Promise<void> | null = null;
 
     const country = computed(
         () => countries.value.find((c) => c.slug === countrySlug.value) ?? null,
@@ -51,11 +56,32 @@ export const useLeagueStore = defineStore("league", () => {
     };
 
     const chooseCountry = async (slug: string) => {
+        const request = ++countryRequest;
         countrySlug.value = slug;
-        leagues.value = await api.leagues(slug);
-        // The top flight is what somebody means by a country's football until they say otherwise.
-        leagueId.value = leagues.value[0]?.id ?? null;
-        remember();
+        leagueId.value = null;
+        leagues.value = [];
+        error.value = null;
+        loadingLeagues.value = true;
+
+        try {
+            const available = await api.leagues(slug);
+            if (request !== countryRequest) {
+                return;
+            }
+
+            leagues.value = available;
+            // The top flight is what somebody means by a country's football until they say otherwise.
+            leagueId.value = available[0]?.id ?? null;
+            remember();
+        } catch {
+            if (request === countryRequest) {
+                error.value = "The leagues could not be loaded.";
+            }
+        } finally {
+            if (request === countryRequest) {
+                loadingLeagues.value = false;
+            }
+        }
     };
 
     const chooseLeague = (id: string) => {
@@ -64,25 +90,52 @@ export const useLeagueStore = defineStore("league", () => {
     };
 
     const load = async () => {
-        if (countries.value.length > 0) {
+        if (seasonId.value !== null) {
             return;
         }
 
-        loading.value = true;
+        if (pendingLoad !== null) {
+            return pendingLoad;
+        }
+
+        pendingLoad = (async () => {
+            loadingCountries.value = true;
+            error.value = null;
+
+            try {
+                if (countries.value.length === 0) {
+                    countries.value = await api.countries();
+                }
+
+                const previous = recall();
+                const known = previous && countries.value.some((c) => c.slug === previous.country);
+                const slug = known ? previous.country : countries.value[0]?.slug;
+
+                if (slug === undefined) {
+                    error.value = "No countries are available.";
+                    return;
+                }
+
+                await chooseCountry(slug);
+
+                if (
+                    known &&
+                    countrySlug.value === slug &&
+                    leagues.value.some((l) => l.id === previous.league)
+                ) {
+                    leagueId.value = previous.league;
+                }
+            } catch {
+                error.value = "The countries could not be loaded.";
+            } finally {
+                loadingCountries.value = false;
+            }
+        })();
 
         try {
-            countries.value = await api.countries();
-
-            const previous = recall();
-            const known = previous && countries.value.some((c) => c.slug === previous.country);
-
-            await chooseCountry(known ? previous.country : (countries.value[0]?.slug ?? ""));
-
-            if (known && leagues.value.some((l) => l.id === previous.league)) {
-                leagueId.value = previous.league;
-            }
+            await pendingLoad;
         } finally {
-            loading.value = false;
+            pendingLoad = null;
         }
     };
 
@@ -97,6 +150,7 @@ export const useLeagueStore = defineStore("league", () => {
         league,
         seasonId,
         loading,
+        error,
         load,
         chooseCountry,
         chooseLeague,
