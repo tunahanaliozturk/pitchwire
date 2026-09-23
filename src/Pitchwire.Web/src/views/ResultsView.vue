@@ -3,5 +3,5 @@ import SeasonMatches from "@/components/SeasonMatches.vue";
 </script>
 
 <template>
-    <SeasonMatches kind="fixtures" />
+    <SeasonMatches kind="results" />
 </template>

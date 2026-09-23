@@ -4,6 +4,9 @@ Notable changes, newest first. Dates are the day the work landed on `main`.
 
 ## Unreleased
 
+- Finished matches now have a Results screen with the same league picker and continuation paging as
+  fixtures. Both lists group matches by local date. The navigation scrolls on narrow screens so every
+  section remains reachable.
 - Switching countries now keeps the latest selection when league requests finish out of order. A
   failed lookup is visible in the picker and can be retried.
 - Fixture pages now belong to the selected season in the query cache. Returning to a league restores
