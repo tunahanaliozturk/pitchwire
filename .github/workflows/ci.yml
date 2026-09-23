@@ -197,6 +197,14 @@ jobs:
           live=$(curl -fsS "http://localhost:5080/matches/live?\$top=5")
           echo "$live" | grep -q '"value"'
 
+      - name: Assert Redis really backs the second cache level
+        run: |
+          # Redis has no other application use in this stack. A populated table read must put an
+          # entry there; merely starting the Redis container does not prove the API uses it.
+          entries=$(docker compose exec -T redis redis-cli --raw DBSIZE | tr -d '\r[:space:]')
+          echo "Redis keys after the table read: $entries"
+          test "${entries:-0}" -gt 0
+
       - name: Assert the web application is served and can reach the API through it
         run: |
           page=$(curl -fsS http://localhost:5082/)
