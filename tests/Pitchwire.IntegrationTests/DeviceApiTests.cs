@@ -187,6 +187,16 @@ public sealed class DeviceApiTests(PostgresFixture postgres) : IClassFixture<Pos
         await IdentifyAsync(first);
         await IdentifyAsync(second);
 
+        var firstIdentity = await first.GetFromJsonAsync<DeviceSettings>(
+            "/devices/me", Json, TestContext.Current.CancellationToken);
+        firstIdentity.ShouldNotBeNull();
+
+        await using var beforeDb = postgres.CreateContext();
+        var lastSeenBefore = await beforeDb.Devices
+            .Where(device => device.Id == firstIdentity.Id)
+            .Select(device => device.LastSeenAt)
+            .SingleAsync(TestContext.Current.CancellationToken);
+
         var allowed = new PreferencesRequest("Europe/Istanbul", null, null, true, false, false, true);
         var refused = allowed with { NotifyOnGoal = false };
 
@@ -214,6 +224,13 @@ public sealed class DeviceApiTests(PostgresFixture postgres) : IClassFixture<Pos
         secondSettings.ShouldNotBeNull();
         firstSettings.NotifyOnGoal.ShouldBeTrue();
         secondSettings.NotifyOnGoal.ShouldBeFalse();
+
+        await using var afterDb = postgres.CreateContext();
+        var lastSeenAfter = await afterDb.Devices
+            .Where(device => device.Id == firstIdentity.Id)
+            .Select(device => device.LastSeenAt)
+            .SingleAsync(TestContext.Current.CancellationToken);
+        lastSeenAfter.ShouldBe(lastSeenBefore);
     }
 
     [Fact]
