@@ -2,6 +2,13 @@
 
 Notable changes, newest first. Dates are the day the work landed on `main`.
 
+## Unreleased
+
+- Switching countries now keeps the latest selection when league requests finish out of order. A
+  failed lookup is visible in the picker and can be retried.
+- Fixture pages now belong to the selected season in the query cache. Returning to a league restores
+  its own pages, including ones that arrived while another league was on screen.
+
 ## 1.0.0 — 2026-09-23
 
 The first version that does everything it set out to do.

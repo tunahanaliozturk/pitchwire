@@ -12,6 +12,14 @@ onMounted(() => {
 const onCountry = async (event: Event) => {
     await leagues.chooseCountry((event.target as HTMLSelectElement).value);
 };
+
+const retry = async () => {
+    if (leagues.countries.length === 0) {
+        await leagues.load();
+    } else {
+        await leagues.chooseCountry(leagues.countrySlug ?? leagues.countries[0]!.slug);
+    }
+};
 </script>
 
 <template>
@@ -41,16 +49,38 @@ const onCountry = async (event: Event) => {
                 </option>
             </select>
         </div>
+        <p v-if="leagues.error" class="error" role="alert">
+            {{ leagues.error }}
+            <button type="button" @click="retry">Retry</button>
+        </p>
     </div>
 </template>
 
 <style scoped>
 .picker {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--gap);
     padding: 12px;
     border-bottom: 1px solid var(--line);
     background: var(--surface);
+}
+
+.error {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--warn);
+    font-size: var(--text-sm);
+}
+
+.error button {
+    margin-left: 8px;
+    font: inherit;
+    color: var(--ink);
+    background: none;
+    border: 0;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .field {

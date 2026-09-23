@@ -1,46 +1,27 @@
 <script setup lang="ts">
-import { useQuery } from "@tanstack/vue-query";
-import { computed, ref } from "vue";
+import { useInfiniteQuery } from "@tanstack/vue-query";
+import { computed } from "vue";
 
 import { api } from "@/api/client";
-import type { MatchSummary } from "@/api/contracts";
 import LeaguePicker from "@/components/LeaguePicker.vue";
 import MatchRow from "@/components/MatchRow.vue";
 import { useSeason } from "@/composables/useSeason";
 
 const { current } = useSeason();
-const pages = ref<MatchSummary[]>([]);
-const nextLink = ref<string | null>(null);
-const loadingMore = ref(false);
-
-const { isLoading, error } = useQuery({
-    queryKey: computed(() => ["fixtures", current.value?.id]),
-    enabled: computed(() => current.value !== null),
-    queryFn: async () => {
-        const page = await api.fixtures(current.value!.id, undefined, 20);
-        pages.value = page.value;
-        nextLink.value = page.nextLink;
-        return page;
+const { data, isLoading, error, hasNextPage, isFetchingNextPage, fetchNextPage } = useInfiniteQuery(
+    {
+        queryKey: computed(() => ["fixtures", current.value?.id] as const),
+        enabled: computed(() => current.value !== null),
+        initialPageParam: null as string | null,
+        queryFn: ({ pageParam, queryKey }) =>
+            pageParam === null ? api.fixtures(queryKey[1]!, undefined, 20) : api.page(pageParam),
+        getNextPageParam: (lastPage) => lastPage.nextLink ?? undefined,
     },
-});
+);
 
-// Follows the link the server gave, rather than building the next request here. The token is opaque
-// on purpose: what is inside it is the server's business and it has changed once already.
-const more = async () => {
-    if (nextLink.value === null || loadingMore.value) {
-        return;
-    }
-
-    loadingMore.value = true;
-
-    try {
-        const page = await api.page(nextLink.value);
-        pages.value = [...pages.value, ...page.value];
-        nextLink.value = page.nextLink;
-    } finally {
-        loadingMore.value = false;
-    }
-};
+// Query owns all pages under the season key. Returning to a league restores its own pages; a late
+// response from the previous league cannot append matches to the one currently on screen.
+const matches = computed(() => data.value?.pages.flatMap((page) => page.value) ?? []);
 </script>
 
 <template>
@@ -52,11 +33,16 @@ const more = async () => {
         <p v-else-if="error" role="alert">The fixture list could not be loaded.</p>
 
         <template v-else>
-            <MatchRow v-for="match in pages" :key="match.id" :match="match" />
+            <MatchRow v-for="match in matches" :key="match.id" :match="match" />
 
             <div class="more">
-                <button v-if="nextLink" type="button" :disabled="loadingMore" @click="more">
-                    {{ loadingMore ? "Loading" : "Show more" }}
+                <button
+                    v-if="hasNextPage"
+                    type="button"
+                    :disabled="isFetchingNextPage"
+                    @click="fetchNextPage()"
+                >
+                    {{ isFetchingNextPage ? "Loading" : "Show more" }}
                 </button>
                 <p v-else class="end">That is the whole list.</p>
             </div>
