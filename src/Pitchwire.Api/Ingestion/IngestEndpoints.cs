@@ -14,7 +14,9 @@ internal static class IngestEndpoints
         // The handler is cast because a Task<IResult> method group binds as a RequestDelegate, which
         // runs the method and then throws the result away. The symptom is an endpoint that answers 200
         // with an empty body and no error anywhere.
-        routes.MapPost("/ingest/events", (Delegate)HandleAsync);
+        routes.MapPost("/ingest/events", (Delegate)HandleAsync)
+            .RequireRateLimiting(ApiRateLimits.SignedIngest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
     }
 
     private static async Task<Accepted<IngestResponse>> HandleAsync(

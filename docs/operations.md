@@ -68,10 +68,6 @@ with `__` between the sections.
 |---|---|---|
 | `ConnectionStrings__Postgres` | — | Required. |
 | `ConnectionStrings__Redis` | none | Without it the cache is first level only, which is fine for one instance. |
-
-Compose sets the Redis connection to `redis:6379`; the CI quick-start test checks that a table read
-actually puts an entry in Redis. Omitting the connection when running the API separately leaves only
-the local first level.
 | `Ingest__Secret` | — | The shared secret the feed signs with. Required. |
 | `Ingest__Provider` | `simulator` | The provider name stored against each event. |
 | `Ingest__ReplayTolerance` | 5 minutes | How far a signed timestamp may be from now. |
@@ -79,10 +75,18 @@ the local first level.
 | `Ingest__StaleAfter` | 30 seconds | Silence after which a live match is swept to finished. |
 | `Ingest__SweepInterval` | 10 seconds | How often the sweeper looks. |
 | `Ingest__RelayInterval` | 2 seconds | How often the notification outbox is drained. |
-| `Ingest__MaxBodyBytes` | 1 MB | Requests larger than this are refused before they are read. |
+| `Ingest__MaxBodyBytes` | 1 MB | Requests larger than this are stopped while being read, before the signature is checked. |
+| `RateLimits__DeviceWritesPerMinute` | 30 | Writes per verified device per minute, shared across its preferences, favourites and subscriptions. |
+| `RateLimits__IngestBatchesPerWindow` | 100 | Signed batches allowed in one ingest window. |
+| `RateLimits__IngestWindowSeconds` | 1 | Length of the ingest window. |
 | `WebPush__PublicKey`, `WebPush__PrivateKey` | generated | See below. |
 | `WebPush__Subject` | a mailto | Contact address sent to the push service. |
 | `Seed__Enabled` | `false` | Apply migrations and seed the catalogue on start. |
+
+Compose sets the Redis connection to `redis:6379`; the CI quick-start test checks that a table read
+actually puts an entry in Redis. Omitting the connection when running the API separately leaves only
+the local first level. The API rate limits above are per process. A response that exceeds one returns
+429 with a `Retry-After` header; do not retry immediately.
 
 If no VAPID keys are configured the API generates a pair at start and logs a warning. That keeps a
 demo working out of the box and it has a cost worth knowing: the keys change on every restart, and a

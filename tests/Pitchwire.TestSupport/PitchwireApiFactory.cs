@@ -15,7 +15,8 @@ namespace Pitchwire.TestSupport;
 public sealed class PitchwireApiFactory(
     string connectionString,
     Action<IServiceCollection>? configureServices = null,
-    string? redisConnectionString = null)
+    string? redisConnectionString = null,
+    IReadOnlyDictionary<string, string>? settings = null)
     : WebApplicationFactory<Program>
 {
     public const string IngestSecret = "integration-test-secret-long-enough";
@@ -31,6 +32,14 @@ public sealed class PitchwireApiFactory(
             builder.UseSetting("ConnectionStrings:Redis", redisConnectionString);
         }
         builder.UseSetting("Ingest:Secret", IngestSecret);
+
+        if (settings is not null)
+        {
+            foreach (var (key, value) in settings)
+            {
+                builder.UseSetting(key, value);
+            }
+        }
 
         // A test has no patience for the half minute of silence that marks a match quiet in a real
         // deployment, and waiting it out would only prove that Task.Delay works.

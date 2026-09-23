@@ -35,6 +35,7 @@ builder.Services.AddOptions<WebPushOptions>()
     .Bind(builder.Configuration.GetSection(WebPushOptions.SectionName));
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddPitchwireRateLimits(builder.Configuration);
 builder.Services.AddPitchwireApplication();
 builder.Services.AddPitchwireInfrastructure(
     builder.Configuration.GetConnectionString("Postgres")
@@ -68,11 +69,25 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = check => check.Tags.Contains("ready"),
 });
 
+app.UseRouting();
+
+// Resolve the actual device before selecting its write allowance. The handler reuses the resolved
+// record, so authorization is not paid for twice on a successful write.
+app.UseWhen(
+    context => context.Request.Path.StartsWithSegments("/devices/me") &&
+        (HttpMethods.IsPut(context.Request.Method) || HttpMethods.IsPost(context.Request.Method) ||
+         HttpMethods.IsPatch(context.Request.Method) || HttpMethods.IsDelete(context.Request.Method)),
+    device => device.UseMiddleware<DeviceWriteIdentityMiddleware>());
+
 // Only the ingestion path is signed. Applying this globally would demand a provider signature on the
 // health endpoints, which are read by a container runtime that has no secret.
 app.UseWhen(
     context => context.Request.Path.StartsWithSegments("/ingest"),
     ingest => ingest.UseMiddleware<IngestSignatureMiddleware>());
+
+// Both endpoint policies run after identity or signature verification, not against a claimed cookie
+// or a header a caller can change on every request.
+app.UseRateLimiter();
 
 app.MapDevices();
 app.MapIngestion();

@@ -176,6 +176,61 @@ public sealed class DeviceApiTests(PostgresFixture postgres) : IClassFixture<Pos
         subscription.Auth.ShouldBe("renewed-auth");
     }
 
+    [Fact]
+    public async Task A_verified_device_shares_one_allowance_across_writes_and_a_rejected_preference_stays_unchanged()
+    {
+        await using var app = new PitchwireApiFactory(
+            postgres.ConnectionString,
+            settings: new Dictionary<string, string> { ["RateLimits:DeviceWritesPerMinute"] = "2" });
+        using var first = app.CreateClient();
+        using var second = app.CreateClient();
+        await IdentifyAsync(first);
+        await IdentifyAsync(second);
+
+        var allowed = new PreferencesRequest("Europe/Istanbul", null, null, true, false, false, true);
+        var refused = allowed with { NotifyOnGoal = false };
+
+        using var firstWrite = await first.PutAsJsonAsync(
+            "/devices/me/preferences", allowed, Json, TestContext.Current.CancellationToken);
+        using var secondWrite = await first.PutAsJsonAsync(
+            "/devices/me/favourites", new FavouritesRequest([]), Json, TestContext.Current.CancellationToken);
+        using var limited = await first.PutAsJsonAsync(
+            "/devices/me/preferences", refused, Json, TestContext.Current.CancellationToken);
+        using var otherDevice = await second.PutAsJsonAsync(
+            "/devices/me/preferences", refused, Json, TestContext.Current.CancellationToken);
+
+        firstWrite.StatusCode.ShouldBe(HttpStatusCode.OK);
+        secondWrite.StatusCode.ShouldBe(HttpStatusCode.OK);
+        limited.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
+        limited.Headers.Contains("Retry-After").ShouldBeTrue();
+        otherDevice.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var firstSettings = await first.GetFromJsonAsync<DeviceSettings>(
+            "/devices/me", Json, TestContext.Current.CancellationToken);
+        var secondSettings = await second.GetFromJsonAsync<DeviceSettings>(
+            "/devices/me", Json, TestContext.Current.CancellationToken);
+
+        firstSettings.ShouldNotBeNull();
+        secondSettings.ShouldNotBeNull();
+        firstSettings.NotifyOnGoal.ShouldBeTrue();
+        secondSettings.NotifyOnGoal.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task A_made_up_cookie_is_refused_before_it_can_choose_a_rate_limit_partition()
+    {
+        await using var app = new PitchwireApiFactory(
+            postgres.ConnectionString,
+            settings: new Dictionary<string, string> { ["RateLimits:DeviceWritesPerMinute"] = "1" });
+        using var stranger = app.CreateClient();
+        stranger.DefaultRequestHeaders.Add("Cookie", $"{DeviceEndpoints.CookieName}=made-up-token");
+
+        using var response = await stranger.PutAsJsonAsync(
+            "/devices/me/favourites", new FavouritesRequest([]), Json, TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
     /// <summary>
     /// Takes the issued cookie and sends it back by hand.
     /// </summary>
