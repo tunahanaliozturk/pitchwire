@@ -50,10 +50,13 @@ public sealed class DeviceRegistry(IPitchwireDbContext db, IStoreFailures failur
 
         var hash = Hash(token);
         var device = await db.Devices.FirstOrDefaultAsync(d => d.TokenHash == hash, cancellationToken);
+        var now = clock.GetUtcNow();
 
-        if (device is not null)
+        // Authentication is on every write, including one rejected by the rate limiter. Persisting
+        // last-seen on every attempt would turn a cheap 429 into a database write under abuse.
+        if (device is not null && now - device.LastSeenAt >= TimeSpan.FromMinutes(5))
         {
-            device.LastSeenAt = clock.GetUtcNow();
+            device.LastSeenAt = now;
             await db.SaveChangesAsync(cancellationToken);
         }
 

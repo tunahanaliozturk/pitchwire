@@ -148,6 +148,33 @@ public sealed class IngestionTests(PostgresFixture postgres) : IClassFixture<Pos
     }
 
     [Fact]
+    public async Task Only_verified_ingest_batches_spend_the_feed_rate_allowance()
+    {
+        await using var app = new PitchwireApiFactory(
+            postgres.ConnectionString,
+            settings: new Dictionary<string, string>
+            {
+                ["RateLimits:IngestBatchesPerWindow"] = "2",
+                ["RateLimits:IngestWindowSeconds"] = "10",
+            });
+        using var client = app.CreateClient();
+
+        using var invalid = await client.PostIngestAsync([], secret: "not-the-feed-secret");
+        using var first = await client.PostIngestAsync([]);
+        using var second = await client.PostIngestAsync([]);
+        using var limited = await client.PostIngestAsync([]);
+
+        invalid.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        first.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+        second.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+        limited.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
+        limited.Headers.Contains("Retry-After").ShouldBeTrue();
+
+        using var health = await client.GetAsync("/health/live", TestContext.Current.CancellationToken);
+        health.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task Events_for_two_matches_in_one_batch_both_land()
     {
         await using var app = new PitchwireApiFactory(postgres.ConnectionString);

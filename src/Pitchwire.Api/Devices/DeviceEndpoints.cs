@@ -52,10 +52,14 @@ public static class DeviceEndpoints
 
         routes.MapPost("/devices", (Delegate)IssueAsync).WithName("IssueDevice");
         routes.MapGet("/devices/me", (Delegate)MeAsync).WithName("CurrentDevice");
-        routes.MapPut("/devices/me/preferences", (Delegate)PreferencesAsync).WithName("UpdatePreferences");
-        routes.MapPut("/devices/me/favourites", (Delegate)FavouritesAsync).WithName("UpdateFavourites");
-        routes.MapPost("/devices/me/push-subscriptions", (Delegate)SubscribeAsync).WithName("Subscribe");
-        routes.MapDelete("/devices/me/push-subscriptions", (Delegate)UnsubscribeAsync).WithName("Unsubscribe");
+        routes.MapPut("/devices/me/preferences", (Delegate)PreferencesAsync).WithName("UpdatePreferences")
+            .RequireRateLimiting(ApiRateLimits.DeviceWrite).ProducesProblem(StatusCodes.Status429TooManyRequests);
+        routes.MapPut("/devices/me/favourites", (Delegate)FavouritesAsync).WithName("UpdateFavourites")
+            .RequireRateLimiting(ApiRateLimits.DeviceWrite).ProducesProblem(StatusCodes.Status429TooManyRequests);
+        routes.MapPost("/devices/me/push-subscriptions", (Delegate)SubscribeAsync).WithName("Subscribe")
+            .RequireRateLimiting(ApiRateLimits.DeviceWrite).ProducesProblem(StatusCodes.Status429TooManyRequests);
+        routes.MapDelete("/devices/me/push-subscriptions", (Delegate)UnsubscribeAsync).WithName("Unsubscribe")
+            .RequireRateLimiting(ApiRateLimits.DeviceWrite).ProducesProblem(StatusCodes.Status429TooManyRequests);
     }
 
     private static async Task<Created<DeviceSettings>> IssueAsync(
@@ -200,7 +204,9 @@ public static class DeviceEndpoints
         HttpContext context,
         DeviceRegistry registry,
         CancellationToken cancellationToken) =>
-        registry.FindAsync(context.Request.Cookies[CookieName], cancellationToken);
+        context.Items.TryGetValue(DeviceWriteIdentityMiddleware.ContextKey, out var identity)
+            ? Task.FromResult(identity as Device)
+            : registry.FindAsync(context.Request.Cookies[CookieName], cancellationToken);
 
     private static async Task<DeviceSettings> SettingsAsync(
         DeviceRegistry registry,

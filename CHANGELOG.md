@@ -4,6 +4,9 @@ Notable changes, newest first. Dates are the day the work landed on `main`.
 
 ## Unreleased
 
+- Verified devices now have a shared write allowance across preferences, favourites and push
+  subscriptions. Signed ingest has a separate allowance; rejected requests answer 429 with
+  `Retry-After`, and unauthenticated callers cannot choose their own rate-limit partition.
 - Compose now gives the API its Redis connection, and CI checks that a table read populates Redis.
   Previously the Redis container started but the API used only its local cache.
 - Signed ingestion now enforces its body limit even when the provider omits `Content-Length`, and

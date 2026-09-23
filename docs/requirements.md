@@ -390,8 +390,9 @@ Security requirements:
   batches are rejected before signature verification.
 * Device tokens are 256 bits of cryptographic randomness, stored hashed, never logged.
 * The browser-facing `/api` proxy limits requests by the socket's client IP, including device writes;
-  the limit cannot be evaded with a caller-supplied forwarding header. Per-device write limits and a
-  separate ingestion limit remain deployment work, not protections this build claims to have.
+  the limit cannot be evaded with a caller-supplied forwarding header. The API also limits writes by
+  a device identity verified against the database, and signed ingestion under its own policy. These
+  API allowances are per process; a multi-replica deployment needs shared rate-limit state.
 * The browser uses a same-origin API proxy; no cross-origin browser access is enabled. The proxy sets
   CSP, HSTS, `X-Content-Type-Options` and frame/referrer policy headers. HSTS takes effect only when
   the site is actually served over HTTPS.
