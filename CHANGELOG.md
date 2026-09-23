@@ -4,6 +4,8 @@ Notable changes, newest first. Dates are the day the work landed on `main`.
 
 ## Unreleased
 
+- Chromium now exercises competition switching, combined match filters and all match-detail tabs
+  against the running compose stack in CI. A failed journey keeps its trace for diagnosis.
 - Fixtures and results can now be filtered by round and team together. The season endpoint supplies
   the choices, and continuation links and cache keys keep each filtered list separate.
 - Finished matches now have a Results screen with the same league picker and continuation paging as

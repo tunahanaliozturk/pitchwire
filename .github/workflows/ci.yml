@@ -207,6 +207,34 @@ jobs:
           # The hub handshake travels the same proxy. A negotiate that answers proves the upgrade is wired.
           curl -fsS -X POST "http://localhost:5082/api/hub/matches/negotiate?negotiateVersion=1" | grep -q WebSockets
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Pitchwire.Web/package-lock.json
+
+      - name: Install browser test dependencies
+        run: npm ci
+        working-directory: src/Pitchwire.Web
+
+      - name: Install Chromium and its system dependencies
+        run: npx playwright install --with-deps chromium
+        working-directory: src/Pitchwire.Web
+
+      - name: Exercise the browser journeys against the running stack
+        run: npm run test:e2e
+        working-directory: src/Pitchwire.Web
+
+      - name: Keep the browser trace when a journey fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-journey-failure
+          path: |
+            src/Pitchwire.Web/test-results/
+            src/Pitchwire.Web/playwright-report/
+          retention-days: 7
+
       - name: Assert the application can be installed and told about a goal
         run: |
           # A manifest served as application/octet-stream is a manifest browsers refuse, and the
